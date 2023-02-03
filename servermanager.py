@@ -22,7 +22,7 @@ def BeginServer(PromptForIP):
             case "custom":
                 server.bind((input("\033[33mIP Address of server:\033[0m"), int(input("\033[33mPort:\033[0m"))))
 
-    sys.stdout.write(f"\r\033[90mListening for connections at \033[93m{server.getpeername()}\033[90m...")
+    sys.stdout.write(f"\r\033[90mListening for connections at \033[93m{server.getsockname()}\033[90m...")
     server.listen(5)
 
     while True:
