@@ -22,10 +22,12 @@ def BeginServer(PromptForIP):
             case "custom":
                 server.bind((input("\033[33mIP Address of server:\033[0m"), int(input("\033[33mPort:\033[0m"))))
 
+    sys.stdout.write(f"\r\033[90mListening for connections at \033[93m{server.getpeername()}\033[90m...")
     server.listen(5)
 
     while True:
         SocketConnection, Address = server.accept()
+        sys.stdout.flush()
         print(f"\033[33m{Address} has connected.\033[0m")
 
         message = SocketConnection.recv(1024).decode('utf-8')
@@ -43,7 +45,8 @@ def ConnectToServer(ip, port):
     try:
         ClientSocket.connect((ip, int(port)))
     except:
-        print("\033[31m! error: incorrect address !\033[0m")
+        sys.stdout.flush()
+        print("\033[31m! error: connection timeout !\033[0m")
         print("Please try again.")
         print("")    
         return
