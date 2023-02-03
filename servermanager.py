@@ -30,12 +30,12 @@ def BeginServer(PromptForIP):
 
         message = SocketConnection.recv(1024).decode('utf-8')
         print(f"Recieved messaged {message}")
-        
+
         SocketConnection.send(f"Sup bro!".encode('utf-8'))
         print(f"Connection with {Address} ended")
 
 def ConnectToServer(ip, port):
-    ClientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM0)
+    ClientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     print("\033[36m----------------\033[30m")
 
     sys.stdout.write(f"\r\033[90mConnecting to \033[93m{ip}:{port}\033[90m...")
