@@ -57,9 +57,7 @@ def ConnectToServer(ip, port):
     print(f"\033[32mConnected to {ip}\033[0m")
 
     ClientSocket.send("Hello!".encode('utf-8'))
-    print(socket.recv(1024))
-
-    return
+    print(ClientSocket.recv(1024))
 
 def PromptForServer():
     print("\033[33mRun as client or server?")
