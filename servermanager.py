@@ -1,6 +1,10 @@
 import socket
 import sys
 
+def DeletePreviousLine():
+    sys.stdout.write('\033[1A')
+    sys.stdout.write('\0333[2K')
+
 def MenuSelection(ListOfOptions):
     print("(work in progress)")
     print(ListOfOptions)
@@ -22,38 +26,38 @@ def BeginServer(PromptForIP):
             case "custom":
                 server.bind((input("\033[33mIP Address of server:\033[0m"), int(input("\033[33mPort:\033[0m"))))
 
-    sys.stdout.write(f"\r\033[90mListening for connections at \033[93m{server.getsockname()[0]}:{server.getsockname()[1]}\033[90m...")
+    print(f"\r\033[90mListening for connections at \033[93m{server.getsockname()[0]}:{server.getsockname()[1]}\033[90m...")
     server.listen(5)
 
     while True:
         SocketConnection, Address = server.accept()
-        sys.stdout.flush()
-        print(f"\033[33m{Address} has connected.\033[0m")
+        DeletePreviousLine()
+        print(f"\033[33m{Address[0]} has connected.\033[0m")
 
         message = SocketConnection.recv(1024).decode('utf-8')
         print(f"Recieved messaged {message}")
 
         SocketConnection.send(f"Sup bro!".encode('utf-8'))
         SocketConnection.close()
-        print(f"Connection with {Address} ended")
+        print(f"Connection with {Address[0]} ended")
 
 def ConnectToServer(ip, port):
     ClientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     print("\033[36m----------------\033[30m")
 
-    sys.stdout.write(f"\r\033[90mConnecting to \033[93m{ip}:{port}\033[90m...")
+    print(f"\r\033[90mConnecting to \033[93m{ip}:{port}\033[90m...")
+    
 
     try:
         ClientSocket.connect((ip, int(port)))
     except:
-        sys.stdout.flush()
+        DeletePreviousLine()
         print("\033[31m! error: connection timeout !\033[0m")
         print("Please try again.")
         print("")    
         return
 
-    sys.stdout.flush()
-
+    DeletePreviousLine()
     print(f"\033[32mConnected to {ip}\033[0m")
 
     ClientSocket.send("Hello!".encode('utf-8'))
