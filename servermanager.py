@@ -22,7 +22,7 @@ def BeginServer(PromptForIP):
             case "custom":
                 server.bind((input("\033[33mIP Address of server:\033[0m"), int(input("\033[33mPort:\033[0m"))))
 
-    sys.stdout.write(f"\r\033[90mListening for connections at \033[93m{server.getsockname()}\033[90m...")
+    sys.stdout.write(f"\r\033[90mListening for connections at \033[93m{server.getsockname()[0]}:{server.getsockname()[1]}\033[90m...")
     server.listen(5)
 
     while True:
@@ -34,6 +34,7 @@ def BeginServer(PromptForIP):
         print(f"Recieved messaged {message}")
 
         SocketConnection.send(f"Sup bro!".encode('utf-8'))
+        SocketConnection.close()
         print(f"Connection with {Address} ended")
 
 def ConnectToServer(ip, port):
@@ -55,7 +56,7 @@ def ConnectToServer(ip, port):
 
     print(f"\033[32mConnected to {ip}\033[0m")
 
-    ClientSocket("Hello!".encode('utf-8'))
+    ClientSocket.send("Hello!".encode('utf-8'))
     print(socket.recv(1024))
 
     return
