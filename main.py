@@ -16,7 +16,5 @@ print("|                                                  |")
 print("\\--------------------------------------------------/")
 print("\033[0m")
 
-PromptForServer()
-print()
-print("--wip--")
-input()
+while True:
+    PromptForServer()
