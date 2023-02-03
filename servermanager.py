@@ -22,9 +22,18 @@ def BeginServer(PromptForIP):
         print("\033[33mIP Address\033[0m")
         match MenuSelection(["auto", "custom"]):
             case "auto":
-                server.bind((socket.gethostbyname(socket.gethostname()), int(input("\033[33mPort:\033[0m"))))
+                try:
+                    server.bind((socket.gethostbyname(socket.gethostname()), int(input("\033[33mPort:\033[0m"))))
+                except:
+                    print("\033[31m! error: invalid port !\033[0m")
+                    print("Please try again.")
             case "custom":
-                server.bind((input("\033[33mIP Address of server:\033[0m"), int(input("\033[33mPort:\033[0m"))))
+                try:
+                    server.bind((input("\033[33mIP Address of server:\033[0m"), int(input("\033[33mPort:\033[0m"))))
+                except:
+                    print("\033[31m! error: invalid port or ip !\033[0m")
+    else:
+        server.bind((socket.gethostbyname(socket.gethostname()), 9090))
 
     print(f"\r\033[90mListening for connections at \033[93m{server.getsockname()[0]}:{server.getsockname()[1]}\033[90m...")
     server.listen(5)
