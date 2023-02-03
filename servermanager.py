@@ -41,7 +41,7 @@ def ConnectToServer(ip, port):
     sys.stdout.write(f"\r\033[90mConnecting to \033[93m{ip}:{port}\033[90m...")
 
     try:
-        ClientSocket.connect((ip, port))
+        ClientSocket.connect((ip, int(port)))
     except:
         print("\033[31m! error: incorrect address !\033[0m")
         print("Please try again.")
