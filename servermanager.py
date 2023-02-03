@@ -3,7 +3,7 @@ import sys
 
 def DeletePreviousLine():
     sys.stdout.write('\033[1A')
-    sys.stdout.write('\0333[2K')
+    sys.stdout.write('\033[2K')
 
 def MenuSelection(ListOfOptions):
     print("(work in progress)")
