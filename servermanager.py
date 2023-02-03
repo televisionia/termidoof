@@ -18,9 +18,9 @@ def BeginServer(PromptForIP):
         print("\033[33mIP Address\033[0m")
         match MenuSelection(["auto", "custom"]):
             case "auto":
-                server.bind((socket.gethostbyname(socket.gethostname()), input("\033[33mPort:\033[0m")))
+                server.bind((socket.gethostbyname(socket.gethostname()), int(input("\033[33mPort:\033[0m"))))
             case "custom":
-                server.bind((input("\033[33mIP Address of server:\033[0m"), input("\033[33mPort:\033[0m")))
+                server.bind((input("\033[33mIP Address of server:\033[0m"), int(input("\033[33mPort:\033[0m"))))
 
     server.listen(5)
 
