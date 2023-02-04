@@ -91,6 +91,9 @@ def ServerLoop(server, SocketConnection, Address):
                         SplitInput.pop(1)
                         for ConnectedClient in GlobalUserList:
                             SocketConnection.sendto(f"[{FoundUser.colorcode}{FoundUser.username}\033[0m]: {SplitInput[4]}".encode('utf-8'), ConnectedClient[0].address)
+                    case "userlist":
+                        for ConnectedClient in GlobalUserList:
+                            SocketConnection.send(f"ID{ConnectedClient[1]}: {ConnectedClient[0].colorcode}{ConnectedClient[0].username}\033[0m")
             case "UD":
                 NewID = GlobalUserIDCount
                 GlobalUserIDCount += 1
@@ -184,7 +187,8 @@ def ConnectToServer(ip, port):
     ClientLoop.start()
     
     while True:
-        print(ClientSocket.recv(1024).decode('utf-8'))
+        ServerOutput = ClientSocket.recv(1024).decode('utf-8')
+        print(ServerOutput)
 
 
 
