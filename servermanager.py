@@ -95,7 +95,7 @@ def ServerLoop(server, SocketConnection, Address):
                 SocketConnection.sendto(f"{SplitInput[1]} has entered the server.".encode('utf-8'), ConnectedClient[0].address)
                 
         elif SplitInput[0] == "CM": #CLIENT MESSAGES OR COMMANDS
-            SocketConnection.send(f"Read input as: {UserInput} {SplitInput}")
+            SocketConnection.send(f"Read input as: {UserInput} {SplitInput}".encode('utf-8'))
             match SplitInput[4]:
                 case "msg":
                     FoundUser = GetUserFromID[SplitInput[1], GlobalUserList]
