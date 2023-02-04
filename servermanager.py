@@ -78,45 +78,53 @@ def ServerLoop(server, SocketConnection, Address):
     DeletePreviousLine()
     print(f"\033[33m{Address[0]} has connected.\033[0m")
     
-    
-    while True:
-        UserInput = SocketConnection.recv(1024).decode('utf-8')
-        SplitInput = UserInput.split()
-        
-        # - - - - - - - - -
-        #This is where commands that go to the server are handled
-        
-        if SplitInput[0] == "UD": #USERDATA TRANSFER
+    try:
+        while True:
+            UserInput = SocketConnection.recv(1024).decode('utf-8')
+            SplitInput = UserInput.split()
             
-            NewID = GlobalUserIDCount
-            GlobalUserIDCount += 1
-            NewUserAddress = (SplitInput[3], int(SplitInput[4]))
+            # - - - - - - - - -
+            #This is where commands that go to the server are handled
             
-            GlobalUserList.append([User(SplitInput[1], SplitInput[2], NewUserAddress, SocketConnection), NewID])
-            SocketConnection.send(str(NewID).encode('utf-8'))
-            
-            for ConnectedClient in GlobalUserList:
-                ConnectedClient[0].client.send(f"{SplitInput[1]} has entered the server.".encode('utf-8'))
+            if SplitInput[0] == "UD": #USERDATA TRANSFER
                 
-        elif SplitInput[0] == "CM": #CLIENT MESSAGES OR COMMANDS
-            match SplitInput[4]:
-                case "msg":
-                    FoundUser = GetUserFromID(int(SplitInput[1]))
-                    SplitInput.pop(0)
-                    SplitInput.pop(0)
-                    SplitInput.pop(0)
-                    SplitInput.pop(0)
-                    SplitInput.pop(0)
-                    if FoundUser == None:
-                        SocketConnection.send("\033[31m! error: invalid userID !\033[0m".encode('utf-8'))
-                    else:
+                NewID = GlobalUserIDCount
+                GlobalUserIDCount += 1
+                NewUserAddress = (SplitInput[3], int(SplitInput[4]))
+                
+                GlobalUserList.append([User(SplitInput[1], SplitInput[2], NewUserAddress, SocketConnection), NewID])
+                SocketConnection.send(str(NewID).encode('utf-8'))
+                
+                for ConnectedClient in GlobalUserList:
+                    ConnectedClient[0].client.send(f"{SplitInput[1]} has entered the server.".encode('utf-8'))
+                    
+            elif SplitInput[0] == "CM": #CLIENT MESSAGES OR COMMANDS
+                match SplitInput[4]:
+                    case "msg":
+                        FoundUser = GetUserFromID(int(SplitInput[1]))
+                        SplitInput.pop(0)
+                        SplitInput.pop(0)
+                        SplitInput.pop(0)
+                        SplitInput.pop(0)
+                        SplitInput.pop(0)
+                        if FoundUser == None:
+                            SocketConnection.send("\033[31m! error: invalid userID !\033[0m".encode('utf-8'))
+                        else:
+                            for ConnectedClient in GlobalUserList:
+                                ConnectedClient[0].client.send(f"[{FoundUser.colorcode}{FoundUser.username}\033[0m]: {' '.join(SplitInput)}".encode('utf-8'))
+                    case "userlist":
                         for ConnectedClient in GlobalUserList:
-                            ConnectedClient[0].client.send(f"[{FoundUser.colorcode}{FoundUser.username}\033[0m]: {' '.join(SplitInput)}".encode('utf-8'))
-                case "userlist":
-                    for ConnectedClient in GlobalUserList:
-                        SocketConnection.send(f"ID{ConnectedClient[1]}: {ConnectedClient[0].colorcode}{ConnectedClient[0].username}\033[0m".encode('utf-8'))
-                
-        # - - - - - - - - -
+                            SocketConnection.send(f"ID{ConnectedClient[1]}: {ConnectedClient[0].colorcode}{ConnectedClient[0].username}\033[0m".encode('utf-8'))
+                            
+            # - - - - - - - - -
+            
+    except:
+        GetUserFromID(NewID)
+        for ConnectedClient in GlobalUserList:
+            ConnectedClient[0].client.send(f"{FoundUser.colorcode}{FoundUser.username}\033[0m has left the server.".encode('utf-8'))
+        
+        
+        
 
 def BeginServer(GivePrompt):
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -200,7 +208,8 @@ def ConnectToServer(ip, port):
     
     while True:
         ServerOutput = ClientSocket.recv(1024).decode('utf-8')
-        sys.stdout.write('\033[2K')
+        print("\033[2K", end="")
+        DeletePreviousLine()
         print(ServerOutput)
         print(GlobalCommandPrefix, end="")
         
