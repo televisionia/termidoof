@@ -3,6 +3,10 @@ import time
 import socket
 import sys
 
+UserList = []
+UserIDCount = 0
+
+
 # USER DETAILS
 
 class User:
