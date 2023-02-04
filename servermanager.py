@@ -95,8 +95,13 @@ def ServerLoop(server):
             case "UD":
                 NewID = GlobalUserIDCount
                 GlobalUserIDCount += 1
-                GlobalUserList.append([User(SplitInput[1], SplitInput[2], SplitInput[3]), NewID])
+                
+                NewUserAddress = (SplitInput[3], SplitInput[4])
+                
+                GlobalUserList.append([User(SplitInput[1], SplitInput[2], NewUserAddress), NewID])
+                
                 SocketConnection.send(str(NewID).encode('utf-8'))
+                
                 for ConnectedClient in GlobalUserList:
                     SocketConnection.sendto(f"{SplitInput[1]} has entered the server.".encode('utf-8'), ConnectedClient[0].address)
                 
