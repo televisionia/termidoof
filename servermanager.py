@@ -87,10 +87,10 @@ def ServerLoop(server):
             case "CM":
                 match SplitInput[0]:
                     case "msg":
-                        User = GetUserFromID[SplitInput[1], GlobalUserList]
+                        FoundUser = GetUserFromID[SplitInput[1], GlobalUserList]
                         SplitInput.pop(0)
                         SplitInput.pop(1)
-                        SocketConnection.sendall(f"[{User.colorcode}{User.username}\033[0m]: {SplitInput[4]}".encode('utf-8'))
+                        SocketConnection.sendall(f"[{FoundUser.colorcode}{FoundUser.username}\033[0m]: {SplitInput[4]}".encode('utf-8'))
             case "UD":
                 NewID = GlobalUserIDCount
                 GlobalUserIDCount += 1
