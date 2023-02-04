@@ -130,7 +130,7 @@ def BeginServer(PromptForIP):
     while True:
         print(f"\r\033[90mListening for connections at \033[93m{server.getsockname()[0]}:{server.getsockname()[1]}\033[90m...")
         server.listen(5)
-        serverloop = threading.Thread(target=ServerLoop(server))
+        serverloop = threading.Thread(target=ServerLoop, args=(server))
         serverloop.start()
 
 def ConnectToServer(ip, port):
@@ -179,7 +179,7 @@ def ConnectToServer(ip, port):
     print(f"Setup is {ClientUser.username} {ClientUser.address[0]}")
     print(f"ID provided is: {UserID}")
     
-    ClientLoop = threading.Thread(target=StartClientShell(ClientUser, UserID, ClientSocket))
+    ClientLoop = threading.Thread(target=StartClientShell, args=(ClientUser, UserID, ClientSocket))
     ClientLoop.start()
     
     while True:
