@@ -77,14 +77,11 @@ def ServerLoop(server):
         # - - - - - - - - -
         #This is where commands that go to the server are handled
         
-        try:
-            User = GetUserFromID[SplitInput[1], UserList]
-        except:
-            User = None
         match SplitInput[0]:
             case "CM":
                 match SplitInput[0]:
                     case "msg":
+                        User = GetUserFromID[SplitInput[1], UserList]
                         SplitInput.pop(0)
                         SplitInput.pop(1)
                         SocketConnection.sendall(f"[{User.colorcode}{User.username}\033[0m]: {SplitInput[4]}".encode('utf-8'))
