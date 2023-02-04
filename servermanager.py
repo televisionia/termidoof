@@ -57,10 +57,10 @@ def MenuSelection(ListOfOptions):
 # -- SOCKET FUNCTIONS --
 
 def GetUserFromID(ID):
-    try:
-        return GlobalUserList[GlobalUserList.index([User, ID])]
-    except:
-        return None
+    for UserInList in GetUserFromID:
+        if UserInList[0] == ID:
+            return UserInList
+    return None
 
 def StartClientShell(ClientUser, ClientUserID, ClientSocket):
     while True:
