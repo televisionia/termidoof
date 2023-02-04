@@ -11,17 +11,20 @@ GlobalCommandPrefix = ">> "
 # USER DETAILS
 
 class User:
+    
+    def whisper(self, fromwho, message):
+        self.client.send(f"\033[8m~{fromwho.colorcode}{fromwho.username}\033[8m~ {message}\033[0m".encode('utf-8'))
+    
+    def kick(self):
+        self.client.close()
+        
     def __init__(self, username, colorcode, address, client):
         self.username = username
         self.colorcode = colorcode
         self.address = address
         self.client = client
         
-    def whisper(self, fromwho, message):
-        self.client.send(f"\033[8m~{fromwho.colorcode}{fromwho.username}\033[8m~ {message}\033[0m".encode('utf-8'))
-    
-    def kick(self):
-        self.client.close()
+
         
         
         
@@ -66,11 +69,18 @@ def GetUserFromID(ID):
     return None
 
 def StartClientShell(ClientUser, ClientUserID):
-    global GlobalCommandPrefix
-    while True:
-        ClientInput = input(f"{GlobalCommandPrefix}")
-        if ClientInput != "":
-            SendMessage(ClientInput, ClientUser, ClientUserID, GlobalCommandPrefix)
+    try:
+        while True:
+            ClientInput = input(f"{GlobalCommandPrefix}")
+            
+            if ClientInput != "":
+                print('\033[1F\033[2K\r', end="")
+                SendMessage(ClientInput, ClientUser, ClientUserID, GlobalCommandPrefix)
+            else:
+                print("\033[1F\r", end="")
+    except:
+        return
+            
 
 def ServerLoop(server, SocketConnection, Address):
     global GlobalUserList
@@ -118,6 +128,32 @@ def ServerLoop(server, SocketConnection, Address):
                             SocketConnection.send(f"ID{ConnectedClient[1]}: {ConnectedClient[0].colorcode}{ConnectedClient[0].username}\033[0m".encode('utf-8'))
                     case "exit":
                         SocketConnection.close()
+                    case "whisper":
+                        try:
+                            FoundUser = GetUserFromID(int(SplitInput[1]))
+                            SplitInput.pop(0)
+                            SplitInput.pop(0)
+                            SplitInput.pop(0)
+                            SplitInput.pop(0)
+                            SplitInput.pop(0)
+                            Target = GetUserFromID(int(SplitInput[0]))
+                            SplitInput.pop(0)
+                            Target.whisper(FoundUser, ' '.join(SplitInput))
+                            SocketConnection.send(f"\033[90mWhispered \"{' '.join(SplitInput)}\" to {Target.colorcode}{Target.username}\033[90m".encode('utf-8'))
+                        except:
+                            SocketConnection.send("\033[31m! error: whisper failed !\033[0m".encode('utf-8'))
+                    case "kick":
+                        try:
+                            if int(SplitInput[1]) == 0:
+                                UserToKick = GetUserFromID(int(SplitInput[5]))
+                                UserToKick.client.send("\033[31m! You were kicked from the server !\033[0m".encode('utf-8'))
+                                UserToKick.kick()
+                            else:
+                                SocketConnection.send("\033[31m! error: you are not a admin !\033[0m".encode('utf-8'))                                
+                        except:
+                            SocketConnection.send("\033[31m! error: kick failed !\033[0m".encode('utf-8'))
+                        
+                        
                             
             # - - - - - - - - -
             
@@ -160,6 +196,7 @@ def BeginServer(GivePrompt):
         serverloop.start()
 
 def ConnectToServer(ip, port):
+    global GlobalCommandPrefix
     ClientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     
     print("")
@@ -210,14 +247,19 @@ def ConnectToServer(ip, port):
     print(f"Setup is {ClientUser.username} {ClientUser.address[0]}")
     print(f"ID provided is: {UserID}")
     
+    
     ClientLoop = threading.Thread(target=StartClientShell, args=(ClientUser,UserID,))
     ClientLoop.start()
     
-    while True:
-        ServerOutput = ClientSocket.recv(1024).decode('utf-8')
-        
-        print(f"\b\b\b{ServerOutput}", end="")
-        print(">> ", end="")
+    try:
+        while True:
+            ServerOutput = ClientSocket.recv(1024).decode('utf-8')
+            
+            print(f"\033[2K\r{ServerOutput}")
+    except:
+        print("\033[31m! Disconnected from server !\033[0m")
+        ClientLoop.join()
+
         
 
 
@@ -227,12 +269,11 @@ def ConnectToServer(ip, port):
 
 def PromptForServer():
     print("\033[33m- Welcome to Termidoof! -")
-    print("\033[30;45m      v0.1.0-alpha       ")
-    print("\033[0m")
+    print("\033[30;45m      v0.1.0-alpha       \033[0m")
+    print("")
 
     match MenuSelection(["Client", "Server"],"\033[33mSelect an option\033[0m"):
         case "Client":
             ConnectToServer(input("\033[33mIP Address of server:\033[0m "), input("\033[33mPort:\033[0m "))
         case "Server":
             BeginServer(True)
-
