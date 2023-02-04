@@ -119,7 +119,7 @@ def ServerLoop(server, SocketConnection, Address):
             # - - - - - - - - -
             
     except:
-        GetUserFromID(NewID)
+        GlobalUserList.remove([GetUserFromID(NewID), NewID])
         for ConnectedClient in GlobalUserList:
             ConnectedClient[0].client.send(f"{FoundUser.colorcode}{FoundUser.username}\033[0m has left the server.".encode('utf-8'))
         
