@@ -208,6 +208,8 @@ def ConnectToServer(ip, port):
     
     while True:
         ServerOutput = ClientSocket.recv(1024).decode('utf-8')
+        print("\033[1E", end="")
+        DeletePreviousLine()
         print(f"\b\b\b{ServerOutput}")
         print(GlobalCommandPrefix, end="")
         
