@@ -84,7 +84,7 @@ def ServerLoop(server, SocketConnection, Address):
         
         match SplitInput[0]:
             case "CM":
-                match SplitInput[0]:
+                match SplitInput[4]:
                     case "msg":
                         FoundUser = GetUserFromID[SplitInput[1], GlobalUserList]
                         SplitInput.pop(0)
