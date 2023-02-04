@@ -221,7 +221,7 @@ def ConnectToServer(ip, port):
 
 def PromptForServer():
     print("\033[33m- Welcome to Termidoof! -")
-    print("\033[42m       v0.1.0-alpha      ")
+    print("\033[30;45m       v0.1.0-alpha      ")
     print("\033[0m")
 
     match MenuSelection(["Client", "Server"],"\033[33mSelect an option\033[0m"):
