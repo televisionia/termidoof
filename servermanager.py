@@ -13,7 +13,7 @@ class User:
     def __init__(self, username, colorcode, address):
         self.username = username
         self.colorcode = colorcode
-        self.address = ip
+        self.address = address
         
 
 def DeletePreviousLine():
