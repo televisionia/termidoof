@@ -56,9 +56,9 @@ def MenuSelection(ListOfOptions):
         
 # -- SOCKET FUNCTIONS --
 
-def GetUserFromID(ID, UserList):
+def GetUserFromID(ID):
     try:
-        return UserList[UserList.index([User, ID])]
+        return GlobalUserList[GlobalUserList.index([User, ID])]
     except:
         return None
 
@@ -97,7 +97,7 @@ def ServerLoop(server, SocketConnection, Address):
         elif SplitInput[0] == "CM": #CLIENT MESSAGES OR COMMANDS
             match SplitInput[3]:
                 case "msg":
-                    FoundUser = GetUserFromID[SplitInput[1], GlobalUserList]
+                    FoundUser = GetUserFromID(SplitInput[1])
                     SplitInput.pop(0)
                     SplitInput.pop(0)
                     SplitInput.pop(0)
