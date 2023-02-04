@@ -57,7 +57,7 @@ def MenuSelection(ListOfOptions):
 # -- SOCKET FUNCTIONS --
 
 def GetUserFromID(ID):
-    for UserInList in GetUserFromID:
+    for UserInList in GlobalUserList:
         if UserInList[0] == ID:
             return UserInList
     return None
