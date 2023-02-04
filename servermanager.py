@@ -3,8 +3,8 @@ import time
 import socket
 import sys
 
-UserList = []
-UserIDCount = 0
+GlobalUserList = []
+GlobalUserIDCount = 0
 
 
 # USER DETAILS
@@ -68,6 +68,8 @@ def StartClientShell(ClientUser, ClientUserID, ClientSocket):
         SendMessage(ClientInput, ClientUser, ClientUserID, ClientSocket)
 
 def ServerLoop(server):
+    global GlobalUserList
+    global GlobalUserIDCount
     
     SocketConnection, Address = server.accept()
     DeletePreviousLine()
@@ -85,14 +87,14 @@ def ServerLoop(server):
             case "CM":
                 match SplitInput[0]:
                     case "msg":
-                        User = GetUserFromID[SplitInput[1], UserList]
+                        User = GetUserFromID[SplitInput[1], GlobalUserList]
                         SplitInput.pop(0)
                         SplitInput.pop(1)
                         SocketConnection.sendall(f"[{User.colorcode}{User.username}\033[0m]: {SplitInput[4]}".encode('utf-8'))
             case "UD":
-                NewID = UserIDCount
-                UserIDCount += 1
-                UserList.append([User(SplitInput[1], SplitInput[2], SplitInput[3]), NewID])
+                NewID = GlobalUserIDCount
+                GlobalUserIDCount += 1
+                GlobalUserList.append([User(SplitInput[1], SplitInput[2], SplitInput[3]), NewID])
                 SocketConnection.send(str(NewID).encode('utf-8'))
                 SocketConnection.sendall(f"{SplitInput[1]} has entered the server.".encode('utf-8'))
                 
@@ -117,11 +119,6 @@ def BeginServer(PromptForIP):
                     print("\033[31m! error: invalid port or ip !\033[0m")
     else:
         server.bind((socket.gethostbyname(socket.gethostname()), 9090))
-
-    global UserList
-    UserList = []
-    global UserIDCount
-    UserIDCount = 0
 
     while True:
         print(f"\r\033[90mListening for connections at \033[93m{server.getsockname()[0]}:{server.getsockname()[1]}\033[90m...")
