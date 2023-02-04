@@ -200,7 +200,7 @@ def ConnectToServer(ip, port):
     
     while True:
         ServerOutput = ClientSocket.recv(1024).decode('utf-8')
-        DeletePreviousLine()
+        sys.stdout.write('\033[2K')
         print(ServerOutput)
         print(GlobalCommandPrefix, end="")
         
