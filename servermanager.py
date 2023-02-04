@@ -94,7 +94,8 @@ def ConnectToServer(ip, port):
     print("\033[33m- User Setup -\033[0m")
     ClientUser = User(input("\033[33mUsername:\033[0m"), MenuSelection(["Red", "Blue", "Yellow"]), ClientSocket.getsockname())
     print("")
-    print(f"Setup is {ClientUser}")
+    
+    print(f"Setup is {ClientUser.username} {Client.address}")
     
     ClientSocket.send(f"{ClientUser.username} >> Hello!".encode('utf-8'))
     print(ClientSocket.recv(1024))
