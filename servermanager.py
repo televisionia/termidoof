@@ -81,7 +81,7 @@ def ServerLoop(server, SocketConnection, Address):
         
         # - - - - - - - - -
         #This is where commands that go to the server are handled
-        
+        SocketConnection.send(f"Read input as: {SplitInput}")
         match SplitInput[0]:
             case "CM":
                 match SplitInput[4]:
