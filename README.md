@@ -11,7 +11,7 @@ The code requires [python-inquirer](https://github.com/magmax/python-inquirer) t
 ```
 pip install inquirer
 ```
-This should also be able to run on at least Python v3.10.
+This should also be able to run on at least [Python](https://www.python.org/downloads/) v3.10.
 
 ## Usage
 
