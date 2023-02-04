@@ -102,8 +102,11 @@ def ServerLoop(server, SocketConnection, Address):
                     SplitInput.pop(0)
                     SplitInput.pop(0)
                     SplitInput.pop(0)
-                    for ConnectedClient in GlobalUserList:
-                        SocketConnection.sendto(f"[{FoundUser.colorcode}{FoundUser.username}\033[0m]: {' '.join(SplitInput)}".encode('utf-8'), ConnectedClient[0].address)
+                    if FoundUser == None:
+                        SocketConnection.send("\033[31m! error: invalid userID !\033[0m")
+                    else:
+                        for ConnectedClient in GlobalUserList:
+                            SocketConnection.sendto(f"[{FoundUser.colorcode}{FoundUser.username}\033[0m]: {' '.join(SplitInput)}".encode('utf-8'), ConnectedClient[0].address)
                 case "userlist":
                     for ConnectedClient in GlobalUserList:
                         SocketConnection.send(f"ID{ConnectedClient[1]}: {ConnectedClient[0].colorcode}{ConnectedClient[0].username}\033[0m".encode('utf-8'))
