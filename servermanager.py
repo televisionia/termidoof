@@ -221,12 +221,12 @@ def ConnectToServer(ip, port):
 
 def PromptForServer():
     print("\033[33m- Welcome to Termidoof! -")
-    print("\033[30;45m       v0.1.0-alpha      ")
+    print("\033[30;45m      v0.1.0-alpha       ")
     print("\033[0m")
 
     match MenuSelection(["Client", "Server"],"\033[33mSelect an option\033[0m"):
-        case "client":
+        case "Slient":
             ConnectToServer(input("\033[33mIP Address of server:\033[0m "), input("\033[33mPort:\033[0m "))
-        case "server":
+        case "Server":
             BeginServer(True)
 
