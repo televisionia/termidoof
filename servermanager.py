@@ -67,11 +67,10 @@ def StartClientShell(ClientUser, ClientUserID, ClientSocket):
         ClientInput = input(">>")
         SendMessage(ClientInput, ClientUser, ClientUserID, ClientSocket)
 
-def ServerLoop(server):
+def ServerLoop(server, SocketConnection, Address):
     global GlobalUserList
     global GlobalUserIDCount
     
-    SocketConnection, Address = server.accept()
     DeletePreviousLine()
     print(f"\033[33m{Address[0]} has connected.\033[0m")
     
@@ -127,10 +126,11 @@ def BeginServer(PromptForIP):
     else:
         server.bind((socket.gethostbyname(socket.gethostname()), 9090))
 
+        server.listen(5)
     while True:
         print(f"\r\033[90mListening for connections at \033[93m{server.getsockname()[0]}:{server.getsockname()[1]}\033[90m...")
-        server.listen(5)
-        serverloop = threading.Thread(target=ServerLoop, args=(server))
+        SocketConnection, Address = server.accept()
+        serverloop = threading.Thread(target=ServerLoop, args=(server,SocketConnection,Address,))
         serverloop.start()
 
 def ConnectToServer(ip, port):
@@ -179,7 +179,7 @@ def ConnectToServer(ip, port):
     print(f"Setup is {ClientUser.username} {ClientUser.address[0]}")
     print(f"ID provided is: {UserID}")
     
-    ClientLoop = threading.Thread(target=StartClientShell, args=(ClientUser, UserID, ClientSocket))
+    ClientLoop = threading.Thread(target=StartClientShell, args=(ClientUser,UserID,ClientSocket,))
     ClientLoop.start()
     
     while True:
