@@ -7,7 +7,7 @@ Feel free to contribute!
 **_!!! Security features have not yet been implemented! This project is in experimental phase. !!!_**
 
 ## Dependencies
-- python-inquirer
+The code requires [python-inquirer](https://github.com/magmax/python-inquirer) to run.
 ```
 pip install inquirer
 ```
