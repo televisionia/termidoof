@@ -127,11 +127,14 @@ def BeginServer(GivePrompt):
                 except:
                     print("\033[31m! error: invalid port !\033[0m")
                     print("Please try again.")
+                    return
             case "custom":
                 try:
                     server.bind((input("\033[33mIP Address of server:\033[0m"), int(input("\033[33mPort:\033[0m"))))
                 except:
                     print("\033[31m! error: invalid port or ip !\033[0m")
+                    print("Please try again.")
+                    return
     else:
         server.bind((socket.gethostbyname(socket.gethostname()), 9090))
 
