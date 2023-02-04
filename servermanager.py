@@ -68,7 +68,7 @@ def GetUserFromID(ID):
 def StartClientShell(ClientUser, ClientUserID):
     global GlobalCommandPrefix
     while True:
-        ClientInput = input(GlobalCommandPrefix)
+        ClientInput = input(f"{GlobalCommandPrefix}")
         if ClientInput != "":
             SendMessage(ClientInput, ClientUser, ClientUserID, GlobalCommandPrefix)
 
@@ -97,7 +97,7 @@ def ServerLoop(server, SocketConnection, Address):
                 SocketConnection.send(str(NewID).encode('utf-8'))
                 
                 for ConnectedClient in GlobalUserList:
-                    ConnectedClient[0].client.send(f"{SplitInput[1]} has entered the server.".encode('utf-8'))
+                    ConnectedClient[0].client.send(f"\n{SplitInput[1]} has entered the server.".encode('utf-8'))
                     
             elif SplitInput[0] == "CM": #CLIENT MESSAGES OR COMMANDS
                 match SplitInput[4]:
@@ -185,6 +185,11 @@ def ConnectToServer(ip, port):
     
     print("\033[33m- User Setup -\033[0m")
     ClientUser = User(input("\033[33mUsername:\033[0m ").replace(" ", ""), MenuSelection(["Red", "Blue", "Yellow", "Green"], "\033[33mUsername Colour\033[0m"), ClientSocket.getsockname(), ClientSocket)
+    if ClientUser.username == "":
+        print("\033[31m! error: invalid username !\033[0m")
+        print("Please try again.")
+        ClientSocket.close()
+        
     print("")
     match ClientUser.colorcode:
         case "Red":
@@ -210,10 +215,12 @@ def ConnectToServer(ip, port):
         ServerOutput = ClientSocket.recv(1024).decode('utf-8')
         print("\033[1F", end="")
         print("\033[1E", end="")
-        print("\n", end="")
+        print("")
         print("\033[2K", end="")
         print("\033[1F", end="")
-        print(f"\b\b\b{ServerOutput}")
+        if ServerOutput[0] + ServerOutput [1] != "\n":
+            ServerOutput = f"\n{ServerOutput}"
+        print(f"\b\b\b{ServerOutput}\a")
         print("\033[1E", end="")
         
 
