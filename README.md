@@ -26,7 +26,7 @@ You must type the same port and IP address as the host if you wish to connect to
 
 ![image](https://user-images.githubusercontent.com/106242960/216770549-4e14d9db-6164-4fef-8630-f7af5ab98f8f.png)
 
-After successfully connecting, the [Server](https://github.com/televisionia/termidoof/main#server) will be notified of the connection. You will be able to set your username and set your username colour.  
+After successfully connecting, the [Server](https://github.com/televisionia/termidoof#server) will be notified of the connection. You will be able to set your username and set your username colour.  
 Your username must:
 * Not be blank
 * Have no spaces
@@ -54,7 +54,7 @@ Here are a list of client commands:
    
 ![example](https://user-images.githubusercontent.com/106242960/216771234-965192b0-03ef-490a-afad-661b2a100614.PNG)
 
-The chatroom will run as long as the process running the [Server](https://github.com/televisionia/termidoof/main#server) hasnt stopped. Anyone can leave and join anytime.
+The chatroom will run as long as the process running the [Server](https://github.com/televisionia/termidoof#server) hasnt stopped. Anyone can leave and join anytime.
 
 ### Server  
 This is what you want to select if you are creating a new server for people to connect to.
@@ -67,7 +67,7 @@ In the example below, the localhost (127.0.0.1) is being used. This is recommend
  
 ![image](https://user-images.githubusercontent.com/106242960/216770030-a4e1ef08-614d-42d7-9246-3bf30720a681.png)
 
-From here, you must wait for at least one client to connect to your server. Using a separate process, you can also connect to yourself by selecting [Client](https://github.com/televisionia/termidoof/main#client).
+From here, you must wait for at least one client to connect to your server. Using a separate process, you can also connect to yourself by selecting [Client](https://github.com/televisionia/termidoof#client).
 
 ![image](https://user-images.githubusercontent.com/106242960/216770285-c8774752-783d-4913-a3f4-1935ea92e9d7.png)
 
