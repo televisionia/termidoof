@@ -11,17 +11,17 @@ GlobalCommandPrefix = ">> "
 # USER DETAILS
 
 class User:
-    def whisper():
-        print("wip")
-    
-    def kick():
-        print("wip")
-    
     def __init__(self, username, colorcode, address, client):
         self.username = username
         self.colorcode = colorcode
         self.address = address
         self.client = client
+        
+    def whisper(self, fromwho, message):
+        self.client.send(f"\033[8m~{fromwho.colorcode}{fromwho.username}\033[8m~ {message}\033[0m".encode('utf-8'))
+    
+    def kick(self):
+        self.client.close()
         
         
         
@@ -97,7 +97,7 @@ def ServerLoop(server, SocketConnection, Address):
                 SocketConnection.send(str(NewID).encode('utf-8'))
                 
                 for ConnectedClient in GlobalUserList:
-                    ConnectedClient[0].client.send(f"\n{SplitInput[1]} has entered the server.".encode('utf-8'))
+                    ConnectedClient[0].client.send(f"{SplitInput[1]} has entered the server.".encode('utf-8'))
                     
             elif SplitInput[0] == "CM": #CLIENT MESSAGES OR COMMANDS
                 match SplitInput[4]:
@@ -116,13 +116,15 @@ def ServerLoop(server, SocketConnection, Address):
                     case "userlist":
                         for ConnectedClient in GlobalUserList:
                             SocketConnection.send(f"ID{ConnectedClient[1]}: {ConnectedClient[0].colorcode}{ConnectedClient[0].username}\033[0m".encode('utf-8'))
+                    case "exit":
+                        SocketConnection.close()
                             
             # - - - - - - - - -
             
     except:
         GlobalUserList.remove([GetUserFromID(NewID), NewID])
         for ConnectedClient in GlobalUserList:
-            ConnectedClient[0].client.send(f"\n{FoundUser.colorcode}{FoundUser.username}\033[0m has left the server.".encode('utf-8'))
+            ConnectedClient[0].client.send(f"{FoundUser.colorcode}{FoundUser.username}\033[0m has left the server.".encode('utf-8'))
         
         
         
@@ -213,9 +215,8 @@ def ConnectToServer(ip, port):
     
     while True:
         ServerOutput = ClientSocket.recv(1024).decode('utf-8')
-        if ServerOutput[0] + ServerOutput [1] != "\n":
-            ServerOutput = f"\n{ServerOutput}"
-        print(f"\b\b\b{ServerOutput}")
+        
+        print(f"\b\b\b{ServerOutput}", end="")
         print(">> ", end="")
         
 
