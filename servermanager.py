@@ -16,21 +16,22 @@ class User:
     def kick():
         print("wip")
     
-    def __init__(self, username, colorcode, address):
+    def __init__(self, username, colorcode, address, client):
         self.username = username
         self.colorcode = colorcode
         self.address = address
+        self.client = client
         
         
         
         
 # -- CLIENT TO SERVER FUNCTIONS --
 
-def SendMessage(msg, user, userid, client):
-    client.send(f"CM {userid} {user.username} {msg}".encode('utf-8'))
+def SendMessage(msg, userobject, userid):
+    userobject.client.send(f"CM {userid} {userobject.username} {msg}".encode('utf-8'))
     
-def SendUserData(userobject, client):
-    client.send(f"UD {userobject.username} {userobject.colorcode} {userobject.address[0]} {userobject.address[1]}".encode('utf-8'))
+def SendUserData(userobject):
+    userobject.client.send(f"UD {userobject.username} {userobject.colorcode} {userobject.address[0]} {userobject.address[1]}".encode('utf-8'))
     
     
 
@@ -89,11 +90,11 @@ def ServerLoop(server, SocketConnection, Address):
             GlobalUserIDCount += 1
             NewUserAddress = (SplitInput[3], int(SplitInput[4]))
             
-            GlobalUserList.append([User(SplitInput[1], SplitInput[2], NewUserAddress), NewID])
+            GlobalUserList.append([User(SplitInput[1], SplitInput[2], NewUserAddress, SocketConnection), NewID])
             SocketConnection.send(str(NewID).encode('utf-8'))
             
             for ConnectedClient in GlobalUserList:
-                SocketConnection.sendto(f"{SplitInput[1]} has entered the server.".encode('utf-8'), ConnectedClient[0].address)
+                ConnectedClient.client.send(f"{SplitInput[1]} has entered the server.".encode('utf-8'))
                 
         elif SplitInput[0] == "CM": #CLIENT MESSAGES OR COMMANDS
             match SplitInput[3]:
@@ -107,7 +108,7 @@ def ServerLoop(server, SocketConnection, Address):
                         SocketConnection.send("\033[31m! error: invalid userID !\033[0m".encode('utf-8'))
                     else:
                         for ConnectedClient in GlobalUserList:
-                            SocketConnection.sendto(f"[{FoundUser.colorcode}{FoundUser.username}\033[0m]: {' '.join(SplitInput)}".encode('utf-8'), ConnectedClient[0].address)
+                            ConnectedClient.client.send(f"[{FoundUser.colorcode}{FoundUser.username}\033[0m]: {' '.join(SplitInput)}".encode('utf-8'))
                 case "userlist":
                     for ConnectedClient in GlobalUserList:
                         SocketConnection.send(f"ID{ConnectedClient[1]}: {ConnectedClient[0].colorcode}{ConnectedClient[0].username}\033[0m".encode('utf-8'))
@@ -169,7 +170,7 @@ def ConnectToServer(ip, port):
     print("")
     
     print("\033[33m- User Setup -\033[0m")
-    ClientUser = User(input("\033[33mUsername:\033[0m").replace(" ", ""), MenuSelection(["Red", "Blue", "Yellow", "Green"]), ClientSocket.getsockname())
+    ClientUser = User(input("\033[33mUsername:\033[0m").replace(" ", ""), MenuSelection(["Red", "Blue", "Yellow", "Green"]), ClientSocket.getsockname(), ClientSocket)
     print("")
     match ClientUser.colorcode:
         case "Red":
@@ -181,7 +182,7 @@ def ConnectToServer(ip, port):
         case "Green":
             ClientUser.colorcode = "\033[32m"
     
-    SendUserData(ClientUser, ClientSocket)
+    SendUserData(ClientUser)
     
     UserID = int(ClientSocket.recv(1024).decode('utf-8'))
     
