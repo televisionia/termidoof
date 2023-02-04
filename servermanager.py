@@ -58,7 +58,7 @@ def MenuSelection(ListOfOptions):
 
 def GetUserFromID(ID):
     for UserInList in GlobalUserList:
-        if UserInList[0] == ID:
+        if UserInList[1] == ID:
             return UserInList
     return None
 
@@ -97,13 +97,13 @@ def ServerLoop(server, SocketConnection, Address):
         elif SplitInput[0] == "CM": #CLIENT MESSAGES OR COMMANDS
             match SplitInput[3]:
                 case "msg":
-                    FoundUser = GetUserFromID(SplitInput[1])
+                    FoundUser = GetUserFromID(int(SplitInput[1]))
                     SplitInput.pop(0)
                     SplitInput.pop(0)
                     SplitInput.pop(0)
                     SplitInput.pop(0)
                     if FoundUser == None:
-                        SocketConnection.send("\033[31m! error: invalid userID !\033[0m")
+                        SocketConnection.send("\033[31m! error: invalid userID !\033[0m".encode('utf-8'))
                     else:
                         for ConnectedClient in GlobalUserList:
                             SocketConnection.sendto(f"[{FoundUser.colorcode}{FoundUser.username}\033[0m]: {' '.join(SplitInput)}".encode('utf-8'), ConnectedClient[0].address)
