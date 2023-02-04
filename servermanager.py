@@ -72,7 +72,9 @@ def ServerLoop(server):
     
     while True:
         UserInput = SocketConnection.recv(1024).decode('utf-8')
+        print(UserInput)
         SplitInput = UserInput.split()
+        print(SplitInput)
         
         # - - - - - - - - -
         #This is where commands that go to the server are handled
