@@ -225,7 +225,7 @@ def PromptForServer():
     print("\033[0m")
 
     match MenuSelection(["Client", "Server"],"\033[33mSelect an option\033[0m"):
-        case "Slient":
+        case "Client":
             ConnectToServer(input("\033[33mIP Address of server:\033[0m "), input("\033[33mPort:\033[0m "))
         case "Server":
             BeginServer(True)
