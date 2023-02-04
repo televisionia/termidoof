@@ -81,17 +81,18 @@ def ServerLoop(server, SocketConnection, Address):
         
         # - - - - - - - - -
         #This is where commands that go to the server are handled
-        SocketConnection.send(f"Read input as: {SplitInput}".encode('utf-8'))
         match SplitInput[0]:
             case "CM":
                 match SplitInput[4]:
                     case "msg":
+                        SocketConnection.send(f"Read input as: {SplitInput}".encode('utf-8'))
                         FoundUser = GetUserFromID[SplitInput[1], GlobalUserList]
                         SplitInput.pop(0)
                         SplitInput.pop(1)
                         for ConnectedClient in GlobalUserList:
                             SocketConnection.sendto(f"[{FoundUser.colorcode}{FoundUser.username}\033[0m]: {SplitInput[4]}".encode('utf-8'), ConnectedClient[0].address)
                     case "userlist":
+                        SocketConnection.send(f"Read input as: {SplitInput}".encode('utf-8'))
                         for ConnectedClient in GlobalUserList:
                             SocketConnection.send(f"ID{ConnectedClient[1]}: {ConnectedClient[0].colorcode}{ConnectedClient[0].username}\033[0m")
             case "UD":
