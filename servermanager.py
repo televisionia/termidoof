@@ -52,6 +52,12 @@ def MenuSelection(ListOfOptions):
         
 # -- SOCKET FUNCTIONS --
 
+def GetUserFromID(ID, UserList):
+    try:
+        return UserList[UserList.index([User, ID])]
+    except:
+        return None
+
 def StartClientShell(ClientUser, ClientUserID, ClientSocket):
     while True:
         ClientInput = input(">>")
@@ -71,13 +77,14 @@ def ServerLoop(server):
         # - - - - - - - - -
         #This is where commands that go to the server are handled
         
+        User = GetUserFromID[SplitInput[1]]
         match SplitInput[0]:
             case "CM":
                 match SplitInput[0]:
                     case "msg":
                         SplitInput.pop(0)
                         SplitInput.pop(1)
-                        SocketConnection.sendall(f"{}:".encode('utf-8'))
+                        SocketConnection.sendall(f"[{User.colorcode}{User.username}\033[0m]: {SplitInput[4]}".encode('utf-8'))
             case "UD":
                 NewID = UserIDCount
                 UserIDCount += 1
@@ -145,8 +152,17 @@ def ConnectToServer(ip, port):
     print("")
     
     print("\033[33m- User Setup -\033[0m")
-    ClientUser = User(input("\033[33mUsername:\033[0m").replace(" ", ""), MenuSelection(["Red", "Blue", "Yellow"]), ClientSocket.getsockname())
+    ClientUser = User(input("\033[33mUsername:\033[0m").replace(" ", ""), MenuSelection(["Red", "Blue", "Yellow", "Green"]), ClientSocket.getsockname())
     print("")
+    match ClientUser.colorcode:
+        case "Red":
+            ClientUser.colorcode = "\033[31m"
+        case "Blue":
+            ClientUser.colorcode = "\033[34m"
+        case "Yellow":
+            ClientUser.colorcode = "\033[93m"
+        case "Green":
+            ClientUser.colorcode = "\033[32m"
     
     SendUserData(ClientUser)
     
