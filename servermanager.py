@@ -166,7 +166,7 @@ def ConnectToServer(ip, port):
     
     SendUserData(ClientUser, ClientSocket)
     
-    UserID = ClientSocket.recv(1024)
+    UserID = int(ClientSocket.recv(1024).decode('utf-8'))
     
     print(f"Setup is {ClientUser.username} {ClientUser.address[0]}")
     print(f"ID provided is: {UserID}")
@@ -175,7 +175,7 @@ def ConnectToServer(ip, port):
     ClientLoop.start()
     
     while True:
-        print(ClientSocket.recv(1024))
+        print(ClientSocket.recv(1024).decode('utf-8'))
 
 
 
