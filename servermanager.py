@@ -96,7 +96,7 @@ def ServerLoop(server):
                 NewID = GlobalUserIDCount
                 GlobalUserIDCount += 1
                 
-                NewUserAddress = (SplitInput[3], SplitInput[4])
+                NewUserAddress = (SplitInput[3], int(SplitInput[4]))
                 
                 GlobalUserList.append([User(SplitInput[1], SplitInput[2], NewUserAddress), NewID])
                 
