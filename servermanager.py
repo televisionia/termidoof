@@ -63,11 +63,11 @@ def GetUserFromID(ID):
             return UserInList[0]
     return None
 
-def StartClientShell(ClientUser, ClientUserID, ClientSocket):
+def StartClientShell(ClientUser, ClientUserID):
     while True:
         ClientInput = input(">>")
         if ClientInput != "":
-            SendMessage(ClientInput, ClientUser, ClientUserID, ClientSocket)
+            SendMessage(ClientInput, ClientUser, ClientUserID)
 
 def ServerLoop(server, SocketConnection, Address):
     global GlobalUserList
