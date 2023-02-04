@@ -27,7 +27,7 @@ class User:
 # -- CLIENT TO SERVER FUNCTIONS --
 
 def SendMessage(msg, user, userid, client):
-    client.send(f"CM {userid} {user.username} {user.address} {msg}".encode('utf-8'))
+    client.send(f"CM {userid} {user.username} {msg}".encode('utf-8'))
     
 def SendUserData(userobject, client):
     client.send(f"UD {userobject.username} {userobject.colorcode} {userobject.address[0]} {userobject.address[1]}".encode('utf-8'))
@@ -95,8 +95,7 @@ def ServerLoop(server, SocketConnection, Address):
                 SocketConnection.sendto(f"{SplitInput[1]} has entered the server.".encode('utf-8'), ConnectedClient[0].address)
                 
         elif SplitInput[0] == "CM": #CLIENT MESSAGES OR COMMANDS
-            SocketConnection.send(f"Read input as: {UserInput} {SplitInput}".encode('utf-8'))
-            match SplitInput[4]:
+            match SplitInput[3]:
                 case "msg":
                     FoundUser = GetUserFromID[SplitInput[1], GlobalUserList]
                     SplitInput.pop(0)
