@@ -5,6 +5,7 @@ import sys
 
 GlobalUserList = []
 GlobalUserIDCount = 0
+GlobalCommandPrefix = ">> "
 
 
 # USER DETAILS
@@ -27,8 +28,8 @@ class User:
         
 # -- CLIENT TO SERVER FUNCTIONS --
 
-def SendMessage(msg, userobject, userid):
-    userobject.client.send(f"CM {userid} {userobject.username} {msg}".encode('utf-8'))
+def SendMessage(msg, userobject, userid, prefix):
+    userobject.client.send(f"CM {userid} {userobject.username} {prefix} {msg}".encode('utf-8'))
     
 def SendUserData(userobject):
     userobject.client.send(f"UD {userobject.username} {userobject.colorcode} {userobject.address[0]} {userobject.address[1]}".encode('utf-8'))
@@ -64,10 +65,11 @@ def GetUserFromID(ID):
     return None
 
 def StartClientShell(ClientUser, ClientUserID):
+    global GlobalCommandPrefix
     while True:
-        ClientInput = input(">>")
+        ClientInput = input(GlobalCommandPrefix)
         if ClientInput != "":
-            SendMessage(ClientInput, ClientUser, ClientUserID)
+            SendMessage(ClientInput, ClientUser, ClientUserID, GlobalCommandPrefix)
 
 def ServerLoop(server, SocketConnection, Address):
     global GlobalUserList
@@ -97,9 +99,10 @@ def ServerLoop(server, SocketConnection, Address):
                 ConnectedClient[0].client.send(f"{SplitInput[1]} has entered the server.".encode('utf-8'))
                 
         elif SplitInput[0] == "CM": #CLIENT MESSAGES OR COMMANDS
-            match SplitInput[3]:
+            match SplitInput[4]:
                 case "msg":
                     FoundUser = GetUserFromID(int(SplitInput[1]))
+                    SplitInput.pop(0)
                     SplitInput.pop(0)
                     SplitInput.pop(0)
                     SplitInput.pop(0)
@@ -123,14 +126,14 @@ def BeginServer(GivePrompt):
         match MenuSelection(["auto", "custom"]):
             case "auto":
                 try:
-                    server.bind((socket.gethostbyname(socket.gethostname()), int(input("\033[33mPort:\033[0m"))))
+                    server.bind((socket.gethostbyname(socket.gethostname()), int(input("\033[33mPort:\033[0m "))))
                 except:
                     print("\033[31m! error: invalid port !\033[0m")
                     print("Please try again.")
                     return
             case "custom":
                 try:
-                    server.bind((input("\033[33mIP Address of server:\033[0m"), int(input("\033[33mPort:\033[0m"))))
+                    server.bind((input("\033[33mIP Address of server:\033[0m "), int(input("\033[33mPort:\033[0m "))))
                 except:
                     print("\033[31m! error: invalid port or ip !\033[0m")
                     print("Please try again.")
@@ -173,7 +176,7 @@ def ConnectToServer(ip, port):
     print("")
     
     print("\033[33m- User Setup -\033[0m")
-    ClientUser = User(input("\033[33mUsername:\033[0m").replace(" ", ""), MenuSelection(["Red", "Blue", "Yellow", "Green"]), ClientSocket.getsockname(), ClientSocket)
+    ClientUser = User(input("\033[33mUsername:\033[0m ").replace(" ", ""), MenuSelection(["Red", "Blue", "Yellow", "Green"]), ClientSocket.getsockname(), ClientSocket)
     print("")
     match ClientUser.colorcode:
         case "Red":
@@ -197,7 +200,10 @@ def ConnectToServer(ip, port):
     
     while True:
         ServerOutput = ClientSocket.recv(1024).decode('utf-8')
+        DeletePreviousLine()
         print(ServerOutput)
+        print(GlobalCommandPrefix, end="")
+        
 
 
 
@@ -210,7 +216,7 @@ def PromptForServer():
 
     match MenuSelection(["client", "server"]):
         case "client":
-            ConnectToServer(input("\033[33mIP Address of server:\033[0m"), input("\033[33mPort:\033[0m"))
+            ConnectToServer(input("\033[33mIP Address of server:\033[0m "), input("\033[33mPort:\033[0m "))
         case "server":
             BeginServer(True)
 
