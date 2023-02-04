@@ -72,9 +72,7 @@ def ServerLoop(server):
     
     while True:
         UserInput = SocketConnection.recv(1024).decode('utf-8')
-        print(UserInput)
         SplitInput = UserInput.split()
-        print(SplitInput)
         
         # - - - - - - - - -
         #This is where commands that go to the server are handled
@@ -166,7 +164,7 @@ def ConnectToServer(ip, port):
         case "Green":
             ClientUser.colorcode = "\033[32m"
     
-    SendUserData(ClientUser)
+    SendUserData(ClientUser, ClientSocket)
     
     UserID = ClientSocket.recv(1024)
     
