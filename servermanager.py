@@ -77,7 +77,10 @@ def ServerLoop(server):
         # - - - - - - - - -
         #This is where commands that go to the server are handled
         
-        User = GetUserFromID[SplitInput[1]]
+        try:
+            User = GetUserFromID[SplitInput[1], UserList]
+        except:
+            User = None
         match SplitInput[0]:
             case "CM":
                 match SplitInput[0]:
