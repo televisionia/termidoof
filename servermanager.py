@@ -59,7 +59,7 @@ def MenuSelection(ListOfOptions):
 def GetUserFromID(ID):
     for UserInList in GlobalUserList:
         if UserInList[1] == ID:
-            return UserInList
+            return UserInList[0]
     return None
 
 def StartClientShell(ClientUser, ClientUserID, ClientSocket):
