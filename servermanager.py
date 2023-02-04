@@ -89,7 +89,7 @@ def ServerLoop(server):
                 NewID = UserIDCount
                 UserIDCount += 1
                 UserList.append([User(SplitInput[1], SplitInput[2], SplitInput[3]), NewID])
-                SocketConnection.send(NewID)
+                SocketConnection.send(str(NewID).encode('utf-8'))
                 SocketConnection.sendall(f"{SplitInput[1]} has entered the server.".encode('utf-8'))
                 
         # - - - - - - - - -
