@@ -1,7 +1,7 @@
 import threading
-import time
 import socket
 import sys
+import inquirer
 
 GlobalUserList = []
 GlobalUserIDCount = 0
@@ -43,15 +43,16 @@ def DeletePreviousLine():
     sys.stdout.write('\033[1A')
     sys.stdout.write('\033[2K')
 
-def MenuSelection(ListOfOptions):
-    print("(work in progress)")
-    print(ListOfOptions)
-    userinput = input()
-    if userinput in ListOfOptions:
-        return userinput
-    else:
-        print("\033[31m! error: invalid answer !\033[0m")
-        MenuSelection(ListOfOptions)
+def MenuSelection(ListOfOptions, Title):
+    questions = [
+        inquirer.List(
+            "Answer1",
+            message=Title,
+            choices=ListOfOptions,
+        ),
+    ]
+    answers = inquirer.prompt(questions)
+    return answers["Answer1"]
         
         
         
@@ -130,16 +131,15 @@ def BeginServer(GivePrompt):
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     if GivePrompt:
-        print("\033[33mIP Address\033[0m")
-        match MenuSelection(["auto", "custom"]):
-            case "auto":
+        match MenuSelection(["Automatic", "Custom"], "\033[33mIP Address\033[0m"):
+            case "Automatic":
                 try:
                     server.bind((socket.gethostbyname(socket.gethostname()), int(input("\033[33mPort:\033[0m "))))
                 except:
                     print("\033[31m! error: invalid port !\033[0m")
                     print("Please try again.")
                     return
-            case "custom":
+            case "Custom":
                 try:
                     server.bind((input("\033[33mIP Address of server:\033[0m "), int(input("\033[33mPort:\033[0m "))))
                 except:
@@ -184,7 +184,7 @@ def ConnectToServer(ip, port):
     print("")
     
     print("\033[33m- User Setup -\033[0m")
-    ClientUser = User(input("\033[33mUsername:\033[0m ").replace(" ", ""), MenuSelection(["Red", "Blue", "Yellow", "Green"]), ClientSocket.getsockname(), ClientSocket)
+    ClientUser = User(input("\033[33mUsername:\033[0m ").replace(" ", ""), MenuSelection(["Red", "Blue", "Yellow", "Green"], "\033[33mUsername Colour\033[0m"), ClientSocket.getsockname(), ClientSocket)
     print("")
     match ClientUser.colorcode:
         case "Red":
@@ -220,10 +220,11 @@ def ConnectToServer(ip, port):
 # -- MISC FUNCTIONS --
 
 def PromptForServer():
-    print("\033[33m- Run as client or server? -")
+    print("\033[33m- Welcome to Termidoof! -")
+    print("\033[42m       v0.1.0-alpha      ")
     print("\033[0m")
 
-    match MenuSelection(["client", "server"]):
+    match MenuSelection(["Client", "Server"],"\033[33mSelect an option\033[0m"):
         case "client":
             ConnectToServer(input("\033[33mIP Address of server:\033[0m "), input("\033[33mPort:\033[0m "))
         case "server":
