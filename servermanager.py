@@ -3,6 +3,8 @@ import time
 import socket
 import sys
 
+# USER DETAILS
+
 class User:
     def whisper():
         print("wip")
@@ -15,6 +17,21 @@ class User:
         self.colorcode = colorcode
         self.address = address
         
+        
+        
+        
+# -- CLIENT TO SERVER FUNCTIONS --
+
+def SendMessage(msg, user, userid, client):
+    client.send(f"CM {userid} {user.username} {user.address} {msg} ".encode('utf-8'))
+    
+def SendUserData(userobject, client):
+    client.send(f"UD {userobject.username} {userobject.colorcode} {userobject.address}")
+    
+    
+
+
+# -- TERMINAL DISPLAY FUNCTIONS --
 
 def DeletePreviousLine():
     sys.stdout.write('\033[1A')
@@ -29,6 +46,46 @@ def MenuSelection(ListOfOptions):
     else:
         print("\033[31m! error: invalid answer !\033[0m")
         MenuSelection(ListOfOptions)
+        
+        
+        
+        
+# -- SOCKET FUNCTIONS --
+
+def StartClientShell(ClientUser, ClientUserID, ClientSocket):
+    while True:
+        ClientInput = input(">>")
+        SendMessage(ClientInput, ClientUser, ClientUserID, ClientSocket)
+
+def ServerLoop(server):
+    
+    SocketConnection, Address = server.accept()
+    DeletePreviousLine()
+    print(f"\033[33m{Address[0]} has connected.\033[0m")
+    
+    
+    while True:
+        UserInput = SocketConnection.recv(1024).decode('utf-8')
+        SplitInput = UserInput.split()
+        
+        # - - - - - - - - -
+        #This is where commands that go to the server are handled
+        
+        match SplitInput[0]:
+            case "CM":
+                match SplitInput[0]:
+                    case "msg":
+                        SplitInput.pop(0)
+                        SplitInput.pop(1)
+                        SocketConnection.sendall(f"{}:".encode('utf-8'))
+            case "UD":
+                NewID = UserIDCount
+                UserIDCount += 1
+                UserList.append([User(SplitInput[1], SplitInput[2], SplitInput[3]), NewID])
+                SocketConnection.send(NewID)
+                SocketConnection.sendall(f"{SplitInput[1]} has entered the server.".encode('utf-8'))
+                
+        # - - - - - - - - -
 
 def BeginServer(PromptForIP):
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -50,20 +107,16 @@ def BeginServer(PromptForIP):
     else:
         server.bind((socket.gethostbyname(socket.gethostname()), 9090))
 
-    print(f"\r\033[90mListening for connections at \033[93m{server.getsockname()[0]}:{server.getsockname()[1]}\033[90m...")
-    server.listen(5)
+    global UserList
+    UserList = []
+    global UserIDCount
+    UserIDCount = 0
 
     while True:
-        SocketConnection, Address = server.accept()
-        DeletePreviousLine()
-        print(f"\033[33m{Address[0]} has connected.\033[0m")
-
-        message = SocketConnection.recv(1024).decode('utf-8')
-        print(f"Recieved messaged {message}")
-
-        SocketConnection.send(f"Sup bro!".encode('utf-8'))
-        SocketConnection.close()
-        print(f"Connection with {Address[0]} ended")
+        print(f"\r\033[90mListening for connections at \033[93m{server.getsockname()[0]}:{server.getsockname()[1]}\033[90m...")
+        server.listen(5)
+        serverloop = threading.Thread(target=ServerLoop(server))
+        serverloop.start()
 
 def ConnectToServer(ip, port):
     ClientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -92,13 +145,26 @@ def ConnectToServer(ip, port):
     print("")
     
     print("\033[33m- User Setup -\033[0m")
-    ClientUser = User(input("\033[33mUsername:\033[0m"), MenuSelection(["Red", "Blue", "Yellow"]), ClientSocket.getsockname())
+    ClientUser = User(input("\033[33mUsername:\033[0m").replace(" ", ""), MenuSelection(["Red", "Blue", "Yellow"]), ClientSocket.getsockname())
     print("")
     
-    print(f"Setup is {ClientUser.username} {ClientUser.address}")
+    SendUserData(ClientUser)
     
-    ClientSocket.send(f"{ClientUser.username} >> Hello!".encode('utf-8'))
-    print(ClientSocket.recv(1024))
+    UserID = ClientSocket.recv(1024)
+    
+    print(f"Setup is {ClientUser.username} {ClientUser.address[0]}")
+    print(f"ID provided is: {UserID}")
+    
+    ClientLoop = threading.Thread(target=StartClientShell(ClientUser, UserID, ClientSocket))
+    ClientLoop.start()
+    
+    while True:
+        print(ClientSocket.recv(1024))
+
+
+
+
+# -- MISC FUNCTIONS --
 
 def PromptForServer():
     print("\033[33m- Run as client or server? -")
