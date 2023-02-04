@@ -106,7 +106,7 @@ def ServerLoop(server, SocketConnection, Address):
                         SocketConnection.sendto(f"[{FoundUser.colorcode}{FoundUser.username}\033[0m]: {' '.join(SplitInput)}".encode('utf-8'), ConnectedClient[0].address)
                 case "userlist":
                     for ConnectedClient in GlobalUserList:
-                        SocketConnection.send(f"ID{ConnectedClient[1]}: {ConnectedClient[0].colorcode}{ConnectedClient[0].username}\033[0m")
+                        SocketConnection.send(f"ID{ConnectedClient[1]}: {ConnectedClient[0].colorcode}{ConnectedClient[0].username}\033[0m".encode('utf-8'))
                 
         # - - - - - - - - -
 
