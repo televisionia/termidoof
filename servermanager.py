@@ -1,5 +1,20 @@
+import threading
+import time
 import socket
 import sys
+
+class User:
+    def whisper():
+        print("wip")
+    
+    def kick():
+        print("wip")
+    
+    def __init__(self, username, colorcode, address):
+        self.username = username
+        self.colorcode = colorcode
+        self.address = ip
+        
 
 def DeletePreviousLine():
     sys.stdout.write('\033[1A')
@@ -52,7 +67,10 @@ def BeginServer(PromptForIP):
 
 def ConnectToServer(ip, port):
     ClientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    print("\033[36m----------------\033[30m")
+    
+    print("")
+    print("\033[36m--------------------\033[30m")
+    print("")
 
     print(f"\r\033[90mConnecting to \033[93m{ip}:{port}\033[90m...")
     
@@ -68,12 +86,21 @@ def ConnectToServer(ip, port):
 
     DeletePreviousLine()
     print(f"\033[32mConnected to {ip}\033[0m")
-
-    ClientSocket.send("Hello!".encode('utf-8'))
+    
+    print("")
+    print("\033[36m--------------------\033[30m")
+    print("")
+    
+    print("\033[33m- User Setup -\033[0m")
+    ClientUser = User(input("\033[33mUsername:\033[0m"), MenuSelection(["Red", "Blue", "Yellow"]), ClientSocket.getsockname())
+    print("")
+    print(f"Setup is {ClientUser}")
+    
+    ClientSocket.send(f"{ClientUser.username} >> Hello!".encode('utf-8'))
     print(ClientSocket.recv(1024))
 
 def PromptForServer():
-    print("\033[33mRun as client or server?")
+    print("\033[33m- Run as client or server? -")
     print("\033[0m")
 
     match MenuSelection(["client", "server"]):
