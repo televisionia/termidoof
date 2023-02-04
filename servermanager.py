@@ -71,6 +71,7 @@ def StartClientShell(ClientUser, ClientUserID):
         ClientInput = input(GlobalCommandPrefix)
         if ClientInput != "":
             SendMessage(ClientInput, ClientUser, ClientUserID, GlobalCommandPrefix)
+            print("\033[1F")
 
 def ServerLoop(server, SocketConnection, Address):
     global GlobalUserList
@@ -112,17 +113,17 @@ def ServerLoop(server, SocketConnection, Address):
                             SocketConnection.send("\033[31m! error: invalid userID !\033[0m".encode('utf-8'))
                         else:
                             for ConnectedClient in GlobalUserList:
-                                ConnectedClient[0].client.send(f"[{FoundUser.colorcode}{FoundUser.username}\033[0m]: {' '.join(SplitInput)}".encode('utf-8'))
+                                ConnectedClient[0].client.send(f"\n[{FoundUser.colorcode}{FoundUser.username}\033[0m]: {' '.join(SplitInput)}".encode('utf-8'))
                     case "userlist":
                         for ConnectedClient in GlobalUserList:
-                            SocketConnection.send(f"ID{ConnectedClient[1]}: {ConnectedClient[0].colorcode}{ConnectedClient[0].username}\033[0m".encode('utf-8'))
+                            SocketConnection.send(f"\nID{ConnectedClient[1]}: {ConnectedClient[0].colorcode}{ConnectedClient[0].username}\033[0m".encode('utf-8'))
                             
             # - - - - - - - - -
             
     except:
         GlobalUserList.remove([GetUserFromID(NewID), NewID])
         for ConnectedClient in GlobalUserList:
-            ConnectedClient[0].client.send(f"{FoundUser.colorcode}{FoundUser.username}\033[0m has left the server.".encode('utf-8'))
+            ConnectedClient[0].client.send(f"\n{FoundUser.colorcode}{FoundUser.username}\033[0m has left the server.".encode('utf-8'))
         
         
         
