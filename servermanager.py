@@ -213,15 +213,10 @@ def ConnectToServer(ip, port):
     
     while True:
         ServerOutput = ClientSocket.recv(1024).decode('utf-8')
-        print("\033[1F", end="")
-        print("\033[1E", end="")
-        print("")
-        print("\033[2K", end="")
-        print("\033[1F", end="")
         if ServerOutput[0] + ServerOutput [1] != "\n":
             ServerOutput = f"\n{ServerOutput}"
-        print(f"\b\b\b{ServerOutput}\a")
-        print("\033[1E", end="")
+        print(f"\b\b\b{ServerOutput}")
+        print(">> ", end="")
         
 
 
