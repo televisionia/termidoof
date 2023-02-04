@@ -106,10 +106,10 @@ def ServerLoop(server, SocketConnection, Address):
                 
         # - - - - - - - - -
 
-def BeginServer(PromptForIP):
+def BeginServer(GivePrompt):
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-    if PromptForIP:
+    if GivePrompt:
         print("\033[33mIP Address\033[0m")
         match MenuSelection(["auto", "custom"]):
             case "auto":
@@ -126,9 +126,10 @@ def BeginServer(PromptForIP):
     else:
         server.bind((socket.gethostbyname(socket.gethostname()), 9090))
 
-        server.listen(5)
+       
     while True:
         print(f"\r\033[90mListening for connections at \033[93m{server.getsockname()[0]}:{server.getsockname()[1]}\033[90m...")
+        server.listen(5)
         SocketConnection, Address = server.accept()
         serverloop = threading.Thread(target=ServerLoop, args=(server,SocketConnection,Address,))
         serverloop.start()
