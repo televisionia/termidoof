@@ -23,10 +23,10 @@ class User:
 # -- CLIENT TO SERVER FUNCTIONS --
 
 def SendMessage(msg, user, userid, client):
-    client.send(f"CM {userid} {user.username} {user.address} {msg} ".encode('utf-8'))
+    client.send(f"CM {userid} {user.username} {user.address} {msg}".encode('utf-8'))
     
 def SendUserData(userobject, client):
-    client.send(f"UD {userobject.username} {userobject.colorcode} {userobject.address}")
+    client.send(f"UD {userobject.username} {userobject.colorcode} {userobject.address}".encode('utf-8'))
     
     
 
