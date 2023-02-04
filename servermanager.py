@@ -94,7 +94,7 @@ def ServerLoop(server, SocketConnection, Address):
             SocketConnection.send(str(NewID).encode('utf-8'))
             
             for ConnectedClient in GlobalUserList:
-                ConnectedClient.client.send(f"{SplitInput[1]} has entered the server.".encode('utf-8'))
+                ConnectedClient[0].client.send(f"{SplitInput[1]} has entered the server.".encode('utf-8'))
                 
         elif SplitInput[0] == "CM": #CLIENT MESSAGES OR COMMANDS
             match SplitInput[3]:
@@ -108,7 +108,7 @@ def ServerLoop(server, SocketConnection, Address):
                         SocketConnection.send("\033[31m! error: invalid userID !\033[0m".encode('utf-8'))
                     else:
                         for ConnectedClient in GlobalUserList:
-                            ConnectedClient.client.send(f"[{FoundUser.colorcode}{FoundUser.username}\033[0m]: {' '.join(SplitInput)}".encode('utf-8'))
+                            ConnectedClient[0].client.send(f"[{FoundUser.colorcode}{FoundUser.username}\033[0m]: {' '.join(SplitInput)}".encode('utf-8'))
                 case "userlist":
                     for ConnectedClient in GlobalUserList:
                         SocketConnection.send(f"ID{ConnectedClient[1]}: {ConnectedClient[0].colorcode}{ConnectedClient[0].username}\033[0m".encode('utf-8'))
