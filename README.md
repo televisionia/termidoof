@@ -1,6 +1,6 @@
 # termidoof
 A quirky lan-server based multiuser CLI interface with benefits, best in school or the workplace.
-Tested on Windows and nothing else, yet.
+Tested on Windows 10 and nothing else, yet.
 
 Feel free to contribute!
 
@@ -11,6 +11,7 @@ The code requires [python-inquirer](https://github.com/magmax/python-inquirer) t
 ```
 pip install inquirer
 ```
+This should also be able to run on at least Python v3.10.
 
 ## Usage
 
