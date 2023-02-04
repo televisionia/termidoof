@@ -192,7 +192,7 @@ def ConnectToServer(ip, port):
     print(f"Setup is {ClientUser.username} {ClientUser.address[0]}")
     print(f"ID provided is: {UserID}")
     
-    ClientLoop = threading.Thread(target=StartClientShell, args=(ClientUser,UserID,ClientSocket,))
+    ClientLoop = threading.Thread(target=StartClientShell, args=(ClientUser,UserID,))
     ClientLoop.start()
     
     while True:
