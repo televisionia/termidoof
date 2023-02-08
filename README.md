@@ -4,16 +4,20 @@ Tested on Windows 10 and nothing else, yet.
 
 Feel free to contribute!
 
-**_!!! Security features have not yet been implemented! This project is in experimental phase. !!!_**
+**_!!! This project is in experimental phase !!!_**
 
 ## Dependencies
-The code requires [python-inquirer](https://github.com/magmax/python-inquirer) to run.
+
+**(This can be automatically installed for you by running the dependencies.py script)**  
+
+The code requires [python-inquirer](https://github.com/magmax/python-inquirer) and [python-rsa](https://github.com/sybrenstuvel/python-rsa) to run.
 ```
 pip install inquirer
+pip install rsa
 ```
 This should also be able to run on at least [Python](https://www.python.org/downloads/) v3.10.
 
-## Usage
+## Usage (outdated)
 
 You'll find yourself prompted with this menu when you first start the program.
 ![image](https://user-images.githubusercontent.com/106242960/216769148-bf7c5842-b3e4-460a-9518-dd9cb95e9bbc.png)
