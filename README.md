@@ -1,8 +1,8 @@
 # termidoof
 A quirky lan-server based multiuser CLI interface with benefits, best in school or the workplace.
-Tested on Windows 10 and nothing else, yet.
+Currently tested on Windows 10, though other operating systems will be soon.
 
-Feel free to contribute!
+Feel free to contribute to development!
 
 **_!!! This project is in experimental phase !!!_**
 
