@@ -55,7 +55,7 @@ def RequestEncryptonKey(client, password):
     client.send(f"EK {password}".encode("utf-8"))
     RecievedKeyFromServer = client.recv(1024).decode('utf-8')
     
-    if RecievedKeyFromServer != "":
+    if RecievedKeyFromServer != "" and RecievedKeyFromServer != "denied":
         SplitRecievedKeyFromServer = RecievedKeyFromServer.split()
         RecievedKeyFromServer = PublicKeyClass(int(SplitRecievedKeyFromServer[0]), int(SplitRecievedKeyFromServer[1]))
         
