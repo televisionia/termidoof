@@ -1,41 +1,68 @@
 import threading
 import socket
 import sys
+import rsa
 import inquirer
+from rsa import PublicKey as PublicKeyClass
 
 GlobalUserList = []
 GlobalUserIDCount = 0
 GlobalCommandPrefix = ">> "
-
+GlobalPublicServerKey = ""
 
 # USER DETAILS
 
 class User:
     
     def whisper(self, fromwho, message):
-        self.client.send(f"\033[8m~{fromwho.colorcode}{fromwho.username}\033[8m~ {message}\033[0m".encode('utf-8'))
+        self.client.send(rsa.encrypt(f"\033[90m~{fromwho.colorcode}{fromwho.username}\033[90m~ {message}\033[0m".encode('utf-8'), self.publickey))
     
     def kick(self):
         self.client.close()
         
-    def __init__(self, username, colorcode, address, client):
+    def __init__(self, username, colorcode, address, client, publickey):
         self.username = username
         self.colorcode = colorcode
         self.address = address
         self.client = client
+        self.publickey = publickey
         
 
         
         
         
         
-# -- CLIENT TO SERVER FUNCTIONS --
+# -- CLIENT <-> SERVER FUNCTIONS --
 
-def SendMessage(msg, userobject, userid, prefix):
-    userobject.client.send(f"CM {userid} {userobject.username} {prefix} {msg}".encode('utf-8'))
+# - MESSAGE FLAGS -
+# CM = Client Message - For sending messages to other clients
+# GK = Give Key - For giving the client's public key to the server for encryption
+# UD = User Data - For sending the client's user data to the server
+# EK = Encryption Key - Requests for the server's public encryption key to be sent with a password
+
+def SendMessage(msg, userobject, userid):
+    SendingMessage = f"CM {userid} {msg}"
+    userobject.client.send(rsa.encrypt(SendingMessage.encode('utf-8'), GlobalPublicServerKey))
+    
+def SendUserPublicKey(userobject):
+    userobject.client.send(f"GK {userobject.publickey.n} {userobject.publickey.e}".encode('utf-8'))
     
 def SendUserData(userobject):
-    userobject.client.send(f"UD {userobject.username} {userobject.colorcode} {userobject.address[0]} {userobject.address[1]}".encode('utf-8'))
+    SendingUserData = f"UD {userobject.username} {userobject.colorcode} {userobject.address[0]} {userobject.address[1]}"    
+    userobject.client.send(rsa.encrypt(SendingUserData.encode('utf-8'), GlobalPublicServerKey))
+    
+def RequestEncryptonKey(client, password):
+    client.send(f"EK {password}".encode("utf-8"))
+    RecievedKeyFromServer = client.recv(1024).decode('utf-8')
+    
+    if RecievedKeyFromServer != "" and RecievedKeyFromServer != "denied":
+        SplitRecievedKeyFromServer = RecievedKeyFromServer.split()
+        RecievedKeyFromServer = PublicKeyClass(int(SplitRecievedKeyFromServer[0]), int(SplitRecievedKeyFromServer[1]))
+        
+    
+    return RecievedKeyFromServer
+    
+
     
     
 
@@ -69,29 +96,32 @@ def GetUserFromID(ID):
     return None
 
 def StartClientShell(ClientUser, ClientUserID):
-    try:
-        while True:
-            ClientInput = input(f"{GlobalCommandPrefix}")
-            
-            if ClientInput != "":
-                print('\033[1F\033[2K\r', end="")
-                SendMessage(ClientInput, ClientUser, ClientUserID, GlobalCommandPrefix)
-            else:
-                print("\033[1F\r", end="")
-    except:
-        return
+    while True:
+        ClientInput = input(f"{GlobalCommandPrefix}")
+        if len(ClientInput) > 40:
+            print("\033[31m! error: input too large !\033[0m")                
+        elif ClientInput != "":
+            print('\033[1F\033[2K\r', end="")
+            SendMessage(ClientInput, ClientUser, ClientUserID)
+        else:
+            print("\033[1F\r", end="")
+
             
 
-def ServerLoop(server, SocketConnection, Address):
+def ServerLoop(server, SocketConnection, Address, PasswordForEncryptionKey, PrivateKey):
     global GlobalUserList
     global GlobalUserIDCount
+    GotEncryption = False
+    ClientPublicKey = None
     
-    DeletePreviousLine()
-    print(f"\033[33m{Address[0]} has connected.\033[0m")
+    print(f"\033[93m{Address[0]}\033[33m has connected.\033[0m")
     
     try:
         while True:
-            UserInput = SocketConnection.recv(1024).decode('utf-8')
+            if GotEncryption:
+                UserInput = rsa.decrypt(SocketConnection.recv(4096), PrivateKey).decode('utf-8')
+            else:
+                UserInput = SocketConnection.recv(4096).decode('utf-8')
             SplitInput = UserInput.split()
             
             # - - - - - - - - -
@@ -101,31 +131,31 @@ def ServerLoop(server, SocketConnection, Address):
                 
                 NewID = GlobalUserIDCount
                 GlobalUserIDCount += 1
+                
                 NewUserAddress = (SplitInput[3], int(SplitInput[4]))
                 
-                GlobalUserList.append([User(SplitInput[1], SplitInput[2], NewUserAddress, SocketConnection), NewID])
-                SocketConnection.send(str(NewID).encode('utf-8'))
+                GlobalUserList.append([User(SplitInput[1], SplitInput[2], NewUserAddress, SocketConnection, ClientPublicKey), NewID])
+                
+                SocketConnection.send(rsa.encrypt(str(NewID).encode('utf-8'), ClientPublicKey))
                 
                 for ConnectedClient in GlobalUserList:
-                    ConnectedClient[0].client.send(f"{SplitInput[1]} has entered the server.".encode('utf-8'))
+                    ConnectedClient[0].client.send(rsa.encrypt(f"{SplitInput[1]} has entered the server.".encode('utf-8'), ConnectedClient[0].publickey))
                     
             elif SplitInput[0] == "CM": #CLIENT MESSAGES OR COMMANDS
-                match SplitInput[4]:
+                match SplitInput[2]:
                     case "msg":
                         FoundUser = GetUserFromID(int(SplitInput[1]))
                         SplitInput.pop(0)
                         SplitInput.pop(0)
                         SplitInput.pop(0)
-                        SplitInput.pop(0)
-                        SplitInput.pop(0)
                         if FoundUser == None:
-                            SocketConnection.send("\033[31m! error: invalid userID !\033[0m".encode('utf-8'))
+                            SocketConnection.send(rsa.encrypt("\033[31m! error: invalid userID !\033[0m".encode('utf-8'), ClientPublicKey))
                         else:
                             for ConnectedClient in GlobalUserList:
-                                ConnectedClient[0].client.send(f"[{FoundUser.colorcode}{FoundUser.username}\033[0m]: {' '.join(SplitInput)}".encode('utf-8'))
+                                ConnectedClient[0].client.send(rsa.encrypt(f"[{FoundUser.colorcode}{FoundUser.username}\033[0m]: {' '.join(SplitInput)}".encode('utf-8'), ConnectedClient[0].publickey))
                     case "userlist":
                         for ConnectedClient in GlobalUserList:
-                            SocketConnection.send(f"ID{ConnectedClient[1]}: {ConnectedClient[0].colorcode}{ConnectedClient[0].username}\033[0m".encode('utf-8'))
+                            SocketConnection.send(rsa.encrypt(f"ID{ConnectedClient[1]}: {ConnectedClient[0].colorcode}{ConnectedClient[0].username}\033[0m\n".encode('utf-8'), ClientPublicKey))
                     case "exit":
                         SocketConnection.close()
                     case "whisper":
@@ -134,49 +164,54 @@ def ServerLoop(server, SocketConnection, Address):
                             SplitInput.pop(0)
                             SplitInput.pop(0)
                             SplitInput.pop(0)
-                            SplitInput.pop(0)
-                            SplitInput.pop(0)
                             Target = GetUserFromID(int(SplitInput[0]))
                             SplitInput.pop(0)
                             Target.whisper(FoundUser, ' '.join(SplitInput))
-                            SocketConnection.send(f"\033[90mWhispered \"{' '.join(SplitInput)}\" to {Target.colorcode}{Target.username}\033[90m".encode('utf-8'))
+                            SocketConnection.send(rsa.encrypt(f"\033[90mWhispered \"{' '.join(SplitInput)}\" to {Target.colorcode}{Target.username}\033[90m".encode('utf-8'), ClientPublicKey))
                         except:
-                            SocketConnection.send("\033[31m! error: whisper failed !\033[0m".encode('utf-8'))
+                            SocketConnection.send(rsa.encrypt("\033[31m! error: whisper failed !\033[0m".encode('utf-8'), ClientPublicKey))
                     case "kick":
                         try:
                             if int(SplitInput[1]) == 0:
                                 UserToKick = GetUserFromID(int(SplitInput[5]))
-                                UserToKick.client.send("\033[31m! You were kicked from the server !\033[0m".encode('utf-8'))
+                                UserToKick.client.send(rsa.encrypt("\033[31m! You were kicked from the server !\033[0m".encode('utf-8'), UserToKick.publickey))
                                 UserToKick.kick()
                             else:
-                                SocketConnection.send("\033[31m! error: you are not a admin !\033[0m".encode('utf-8'))                                
+                                SocketConnection.send(rsa.encrypt("\033[31m! error: you are not a admin !\033[0m".encode('utf-8'), ClientPublicKey))                               
                         except:
-                            SocketConnection.send("\033[31m! error: kick failed !\033[0m".encode('utf-8'))
-                        
-                        
+                            SocketConnection.send(rsa.encrypt("\033[31m! error: kick failed !\033[0m".encode('utf-8'), ClientPublicKey))
+            elif SplitInput[0] == "EK": #ENCRYPTION KEY REQUEST HANDLER
+                if PasswordForEncryptionKey == "none":
+                    SocketConnection.send(f"{GlobalPublicServerKey.n} {GlobalPublicServerKey.e}".encode('utf-8'))
+                elif SplitInput[1] == PasswordForEncryptionKey:              
+                    print("")
+                    match MenuSelection(["Accept", "Deny"],f"\033[93m{Address[0]}\033[33m requests public encryption key\033[0m"):
+                        case "Accept":
+                            SocketConnection.send(f"{GlobalPublicServerKey.n} {GlobalPublicServerKey.e}".encode('utf-8'))
+                        case "Deny":
+                            SocketConnection.send("denied".encode('utf-8'))
+                else:
+                    SocketConnection.send("denied".encode('utf-8'))
+            
+            elif SplitInput[0] == "GK": #CLIENT PUBLIC ENCRYPTION KEY RECIEVER  
+                GotEncryption = True
+                ClientPublicKey = PublicKeyClass(int(SplitInput[1]), int(SplitInput[2]))
                             
             # - - - - - - - - -
             
     except:
         GlobalUserList.remove([GetUserFromID(NewID), NewID])
         for ConnectedClient in GlobalUserList:
-            ConnectedClient[0].client.send(f"{FoundUser.colorcode}{FoundUser.username}\033[0m has left the server.".encode('utf-8'))
+            ConnectedClient[0].client.send(rsa.encrypt(f"{FoundUser.colorcode}{FoundUser.username}\033[0m has left the server.".encode('utf-8'), ConnectedClient.publickey))
         
         
         
 
 def BeginServer(GivePrompt):
+    global GlobalPublicServerKey
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
     if GivePrompt:
-        match MenuSelection(["Automatic", "Custom"], "\033[33mIP Address\033[0m"):
-            case "Automatic":
-                try:
-                    server.bind((socket.gethostbyname(socket.gethostname()), int(input("\033[33mPort:\033[0m "))))
-                except:
-                    print("\033[31m! error: invalid port !\033[0m")
-                    print("Please try again.")
-                    return
+        match MenuSelection(["Custom", "localhost", "Autoconfiguration", "Cancel"], "\033[33mIP Address\033[0m"):
             case "Custom":
                 try:
                     server.bind((input("\033[33mIP Address of server:\033[0m "), int(input("\033[33mPort:\033[0m "))))
@@ -184,25 +219,59 @@ def BeginServer(GivePrompt):
                     print("\033[31m! error: invalid port or ip !\033[0m")
                     print("Please try again.")
                     return
+            case "localhost":
+                try:
+                    server.bind(("127.0.0.1", int(input("\033[33mPort:\033[0m "))))
+                except:
+                    print("\033[31m! error: invalid port !\033[0m")
+                    print("Please try again.")
+                    return
+            case "Autoconfiguration":
+                try:
+                    server.bind((socket.gethostbyname(socket.getfqdn()), int(input("\033[33mPort:\033[0m "))))
+                except:
+                    print("\033[31m! error: invalid port !\033[0m")
+                    print("Please try again.")
+                    return
+            case "Cancel":
+                return
     else:
         server.bind((socket.gethostbyname(socket.gethostname()), 9090))
 
-       
+    PasswordForEncryptionKey = ""
+    match MenuSelection(["Create", "Set as none", "Cancel"], "\033[33mPublic Encryption Password:\033[0m"):
+        case "Create":
+            while PasswordForEncryptionKey == "":
+                PasswordForEncryptionKey = input("\033[33mEncryption Password:\033[0m ")
+        case "Set as none":
+            PasswordForEncryptionKey = "none"
+        case "Cancel":
+            return
+
+    print(f"\r\033[90mGenerating encryption key...\033[0m")
+    GlobalPublicServerKey, PrivateKey = rsa.newkeys(512)
+    DeletePreviousLine()
+    print(f"\033[32mGenerated encryption key\033[0m")
+    
+    print(f"\r\033[32mNow listening for connections at \033[93m{server.getsockname()[0]}:{server.getsockname()[1]}\033[0m")
     while True:
-        print(f"\r\033[90mListening for connections at \033[93m{server.getsockname()[0]}:{server.getsockname()[1]}\033[90m...")
         server.listen(5)
         SocketConnection, Address = server.accept()
-        serverloop = threading.Thread(target=ServerLoop, args=(server,SocketConnection,Address,))
+        serverloop = threading.Thread(target=ServerLoop, args=(server,SocketConnection,Address,PasswordForEncryptionKey,PrivateKey,))
         serverloop.start()
 
 def ConnectToServer(ip, port):
     global GlobalCommandPrefix
+    global GlobalPublicServerKey
+    
     ClientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     
     print("")
     print("\033[36m--------------------\033[30m")
     print("")
-
+    print("\033[33m- Server Connection -\033[0m")
+    print("")
+    
     print(f"\r\033[90mConnecting to \033[93m{ip}:{port}\033[90m...")
     
 
@@ -212,7 +281,8 @@ def ConnectToServer(ip, port):
         DeletePreviousLine()
         print("\033[31m! error: connection timeout !\033[0m")
         print("Please try again.")
-        print("")    
+        print("")
+        ClientSocket.close()
         return
 
     DeletePreviousLine()
@@ -221,13 +291,45 @@ def ConnectToServer(ip, port):
     print("")
     print("\033[36m--------------------\033[30m")
     print("")
+    print("\033[33m- Encryption Keys -\033[0m")
+    print("")
     
+    GlobalPublicServerKey = RequestEncryptonKey(ClientSocket, "none")
+    while GlobalPublicServerKey == "" or GlobalPublicServerKey == "denied":
+        AttemptedPassword = ""
+
+        while AttemptedPassword == "":
+            AttemptedPassword = input("\033[33mServer Encryption Password: \033[0m ")
+            
+        print("\033[90mAsking server host for encryption key...\033[0m")
+        GlobalPublicServerKey = RequestEncryptonKey(ClientSocket, AttemptedPassword)
+        if GlobalPublicServerKey == "denied":
+            DeletePreviousLine()
+            print("\033[31m! error: encryption key request incorrect or denied !\033[0m")
+            print("\033[31m! Try typing the password again !\033[0m")
+            
+    DeletePreviousLine()
+    print("\033[32mEncryption key obtained\033[0m")
+    
+    
+    print("\033[90mGenerating client encryption key...\033[0m")
+    ClientPublicKey, ClientPrivateKey = rsa.newkeys(512)
+    DeletePreviousLine()
+    print("\033[32mClient encryption key generated\033[0m")
+    
+    print("")
+    print("\033[36m--------------------\033[30m")
+    print("")
     print("\033[33m- User Setup -\033[0m")
-    ClientUser = User(input("\033[33mUsername:\033[0m ").replace(" ", ""), MenuSelection(["Red", "Blue", "Yellow", "Green"], "\033[33mUsername Colour\033[0m"), ClientSocket.getsockname(), ClientSocket)
-    if ClientUser.username == "":
+    print("")
+    
+    ClientUser = User(input("\033[33mUsername:\033[0m ").replace(" ", "_"), MenuSelection(["Red", "Blue", "Yellow", "Green"], "\033[33mUsername Colour\033[0m"), ClientSocket.getsockname(), ClientSocket, ClientPublicKey)
+    if ClientUser.username == "" or len(ClientUser.username) > 12:
         print("\033[31m! error: invalid username !\033[0m")
+        print("Usernames cannot be blank or more than 12 characters")
         print("Please try again.")
         ClientSocket.close()
+        return
         
     print("")
     match ClientUser.colorcode:
@@ -239,10 +341,12 @@ def ConnectToServer(ip, port):
             ClientUser.colorcode = "\033[93m"
         case "Green":
             ClientUser.colorcode = "\033[32m"
+            
     
+    SendUserPublicKey(ClientUser)
     SendUserData(ClientUser)
     
-    UserID = int(ClientSocket.recv(1024).decode('utf-8'))
+    UserID = int(rsa.decrypt(ClientSocket.recv(4096), ClientPrivateKey))
     
     print(f"Setup is {ClientUser.username} {ClientUser.address[0]}")
     print(f"ID provided is: {UserID}")
@@ -250,10 +354,9 @@ def ConnectToServer(ip, port):
     
     ClientLoop = threading.Thread(target=StartClientShell, args=(ClientUser,UserID,))
     ClientLoop.start()
-    
     try:
         while True:
-            ServerOutput = ClientSocket.recv(1024).decode('utf-8')
+            ServerOutput = rsa.decrypt(ClientSocket.recv(4096), ClientPrivateKey).decode('utf-8')
             
             print(f"\033[2K\r{ServerOutput}")
     except:
@@ -269,11 +372,14 @@ def ConnectToServer(ip, port):
 
 def PromptForServer():
     print("\033[33m- Welcome to Termidoof! -")
-    print("\033[30;45m      v0.1.0-alpha       \033[0m")
     print("")
 
     match MenuSelection(["Client", "Server"],"\033[33mSelect an option\033[0m"):
         case "Client":
-            ConnectToServer(input("\033[33mIP Address of server:\033[0m "), input("\033[33mPort:\033[0m "))
+            match MenuSelection(["Scan", "Manual", "Cancel"],"\033[33mGet Server\033[0m"):
+                case "Scan":
+                    print("\033[31m! SCANNING FOR SERVERS HAS NOT BEEN ADDED YET !\033[0m")
+                case "Manual":
+                    ConnectToServer(input("\033[33mIP Address of server:\033[0m "), input("\033[33mPort:\033[0m "))
         case "Server":
             BeginServer(True)
