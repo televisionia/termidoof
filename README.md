@@ -4,7 +4,7 @@ Tested on Windows 10 and nothing else, yet.
 
 Feel free to contribute!
 
-**_!!! Security features are a WIP! This project is in experimental phase. !!!_**
+**_!!! Security features are a WIP with encryption coming soon! This project is in experimental phase. !!!_**
 
 ## Dependencies
 The code requires [python-inquirer](https://github.com/magmax/python-inquirer) to run.
