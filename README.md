@@ -5,7 +5,7 @@ Currently tested on Windows 10, though other operating systems will be soon supp
 
 Feel free to contribute to the development of termidoof!
 
-**_!!! This project is in experimental phase and not secure for connections out of the LAN !!!_**
+**_!!! This project is in experimental phase and is not secure for connections out of the LAN !!!_**
 
 ## Dependencies
 
