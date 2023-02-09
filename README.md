@@ -2,7 +2,7 @@
 A quirky lan-server based multiuser CLI interface with benefits, best in school or the workplace.
 Tested on Windows 10 and nothing else, yet.
 
-Feel free to contribute!
+Feel free to contribute to development!
 
 **_!!! Security features are a WIP with encryption coming soon! This project is in experimental phase. !!!_**
 
