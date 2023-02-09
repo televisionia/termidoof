@@ -1,6 +1,6 @@
 # termidoof
 A quirky lan-server based multiuser CLI interface with benefits, best in school or the workplace.
-Currently tested on Windows 10, though other operating systems will be soon.
+Currently tested on Windows 10, though other operating systems will be soon supported.
 
 Feel free to contribute to the development of termidoof!
 
@@ -17,7 +17,7 @@ pip install rsa
 ```
 This should also be able to run on at least [Python](https://www.python.org/downloads/) v3.10.
 
-## Usage (outdated)
+## Usage (outdated, wiki is to be implemented soon)
 
 You'll find yourself prompted with this menu when you first start the program.
 ![image](https://user-images.githubusercontent.com/106242960/216769148-bf7c5842-b3e4-460a-9518-dd9cb95e9bbc.png)
