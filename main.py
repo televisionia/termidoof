@@ -1,6 +1,4 @@
-import servermanager
 import os
-from servermanager import *
 os.system("")
 
 ReleaseVersion = "v0.1.0-alpha1"
@@ -34,6 +32,8 @@ except:
     input()
     import getdependencies
     exit()
+import servermanager
+from servermanager import *
 
 while True:
     PromptForServer()
