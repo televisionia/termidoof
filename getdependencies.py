@@ -16,7 +16,7 @@ Failed = 0
 Successful = 0
 AlreadyInstalled = 0
 try:
-    os.system("pip")
+    os.system("pip --version")
 except:
     print(f"\033[31mPip cannot be found! Either your system is broken, or you've forgot to install the Pip package on your linux distro.\033[0m")
     print("Press enter to exit.")
