@@ -358,7 +358,7 @@ def ConnectToServer(ip, port):
         while True:
             ServerOutput = rsa.decrypt(ClientSocket.recv(4096), ClientPrivateKey).decode('utf-8')
             
-            print(f"\033[2K\r{ServerOutput}")
+            print(f"\033[2K\r{ServerOutput}", end="/r")
     except:
         print("\033[31m! Disconnected from server !\033[0m")
         ClientLoop.join()
