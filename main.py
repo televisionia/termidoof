@@ -25,6 +25,7 @@ try:
     import sys
     import rsa
     import inquirer
+    import blessed
 except:
     print("\033[31m!!! Uh oh! It seems like some dependencies are not installed... !!!\033[0m")
     print("\033[31mIf this is a build and it is not being run from source, its probably broken.\033[0m")
