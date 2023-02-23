@@ -367,7 +367,7 @@ def ConnectToServer(ip, port):
     ClientLoop.start()
     try:
         while True:
-            if len(TextLog > GlobalLogLimit):
+            if len(TextLog) > GlobalLogLimit:
                 TextLog.pop(0)
             ServerOutput = rsa.decrypt(ClientSocket.recv(4096), ClientPrivateKey).decode('utf-8')
             TextLog.append(ServerOutput)
