@@ -67,7 +67,7 @@ def RequestEncryptonKey(client, password):
 # -- SERVER TO CLIENT FUNCTIONS --
 
 def SendMessageToUser(msg, userobject):
-    userobject.client.send(rsa.encrypt(f"{msg}\n".encode('utf-8'), userobject.publickey))
+    userobject.client.send(rsa.encrypt(f"{msg}".encode('utf-8'), userobject.publickey))
 
     
     
@@ -105,7 +105,7 @@ def StartClientShell(ClientUser, ClientUserID):
     while True:
         with GlobalTerminal.location(0, GlobalTerminal.height - 1):
             ClientInput = input(f"{GlobalCommandPrefix}")
-        if len(ClientInput) > 40:
+        if len(ClientInput) > 80:
             print("\033[31m! error: input too large !\033[0m")                
         elif ClientInput != "":
             print('\033[1F\033[2K\r', end="")
@@ -357,17 +357,20 @@ def ConnectToServer(ip, port):
     
     UserID = int(rsa.decrypt(ClientSocket.recv(4096), ClientPrivateKey))
     
-    print(f"Setup is {ClientUser.username} {ClientUser.address[0]}")
+    print(f"Your username is: {ClientUser.username}")
     print(f"ID provided is: {UserID}")
     
+    TextLog = [f"Your username is: {ClientUser.username}", f"ID provided is: {UserID}"]
     
     ClientLoop = threading.Thread(target=StartClientShell, args=(ClientUser,UserID,))
     ClientLoop.start()
     try:
         while True:
             ServerOutput = rsa.decrypt(ClientSocket.recv(4096), ClientPrivateKey).decode('utf-8')
-            with GlobalTerminal.location(0, GlobalTerminal.height - 2):
-                print(f"\033[2K\r{ServerOutput}")
+            TextLog.append(ServerOutput)
+            with GlobalTerminal.location(0, GlobalTerminal.height - (len(TextLog) + 1)):
+                for LoggedMsg in TextLog:
+                    print(f"\033[2K\r{LoggedMsg}")
     except:
         print("\033[31m! Disconnected from server !\033[0m")
         ClientLoop.join()
