@@ -11,10 +11,11 @@ Feel free to contribute to the development of termidoof!
 
 **(This can be automatically installed for you by running the dependencies.py script)**  
 
-The code requires [python-inquirer](https://github.com/magmax/python-inquirer) and [python-rsa](https://github.com/sybrenstuvel/python-rsa) to run.
+The code requires [python-inquirer](https://github.com/magmax/python-inquirer), [python-rsa](https://github.com/sybrenstuvel/python-rsa) and [blessed](https://github.com/jquast/blessed) to run.
 ```
 pip install inquirer
 pip install rsa
+pip install blessed
 ```
 This should also be able to run on at least [Python](https://www.python.org/downloads/) v3.10.
 
