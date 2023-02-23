@@ -12,6 +12,7 @@ GlobalCommandPrefix = ">> "
 GlobalPublicServerKey = ""
 GlobalTerminal = Terminal()
 GlobalLogLimit = 50
+GlobalClientTextLog = []
 
 # USER DETAILS
 
@@ -119,6 +120,7 @@ def StartClientShell(ClientUser, ClientUserID):
 def ServerLoop(server, SocketConnection, Address, PasswordForEncryptionKey, PrivateKey):
     global GlobalUserList
     global GlobalUserIDCount
+    global GlobalClientTextLog
     GotEncryption = False
     ClientPublicKey = None
     
@@ -189,6 +191,11 @@ def ServerLoop(server, SocketConnection, Address, PasswordForEncryptionKey, Priv
                                 SendMessageToUser("\033[31m! error: you are not a admin !\033[0m", FoundUser)                               
                         except:
                             SendMessageToUser("\033[31m! error: kick failed !\033[0m", FoundUser)
+                    case "clearlog":
+                        try:
+                            SendMessageToUser("CLEAR", FoundUser)
+                        except:
+                            SendMessageToUser("\033[31m! error: clear failed !\033[0m", FoundUser)
             elif SplitInput[0] == "EK": #ENCRYPTION KEY REQUEST HANDLER
                 if PasswordForEncryptionKey == "none":
                     SocketConnection.send(f"{GlobalPublicServerKey.n} {GlobalPublicServerKey.e}".encode('utf-8'))
@@ -357,23 +364,34 @@ def ConnectToServer(ip, port):
     SendUserData(ClientUser)
     
     UserID = int(rsa.decrypt(ClientSocket.recv(4096), ClientPrivateKey))
-    
+
+    GlobalTerminal.clear()
+
     print(f"Your username is: {ClientUser.username}")
     print(f"ID provided is: {UserID}")
     
-    TextLog = [f"Your username is: {ClientUser.username}", f"ID provided is: {UserID}"]
+    GlobalClientTextLog = [f"Your username is: {ClientUser.username}", f"ID provided is: {UserID}"]
     
     ClientLoop = threading.Thread(target=StartClientShell, args=(ClientUser,UserID,))
     ClientLoop.start()
     try:
         while True:
-            if len(TextLog) > GlobalLogLimit:
-                TextLog.pop(0)
+            if len(GlobalClientTextLog) > GlobalLogLimit:
+                GlobalClientTextLog.pop(0)
+            
             ServerOutput = rsa.decrypt(ClientSocket.recv(4096), ClientPrivateKey).decode('utf-8')
-            TextLog.append(ServerOutput)
-            with GlobalTerminal.location(0, GlobalTerminal.height - (len(TextLog) + 1)):
-                for LoggedMsg in TextLog:
-                    print(f"\033[2K\r{LoggedMsg}")
+            
+            if ServerOutput == "CLEAR":
+                GlobalClientTextLog = []
+                print(GlobalTerminal.home + GlobalTerminal.clear + GlobalTerminal.move_y(GlobalTerminal.height - 1) + ">> ", end="")
+            else:
+                
+                GlobalClientTextLog.append(ServerOutput)
+                
+                with GlobalTerminal.location(0, GlobalTerminal.height - (len(GlobalClientTextLog) + 1)):
+                    for LoggedMsg in GlobalClientTextLog:
+                        print(f"\033[2K\r{LoggedMsg}")
+                        
     except:
         print("\033[31m! Disconnected from server !\033[0m")
         ClientLoop.join()
