@@ -11,6 +11,7 @@ GlobalUserIDCount = 0
 GlobalCommandPrefix = ">> "
 GlobalPublicServerKey = ""
 GlobalTerminal = Terminal()
+GlobalLogLimit = 50
 
 # USER DETAILS
 
@@ -366,6 +367,8 @@ def ConnectToServer(ip, port):
     ClientLoop.start()
     try:
         while True:
+            if len(TextLog > GlobalLogLimit):
+                TextLog.pop(0)
             ServerOutput = rsa.decrypt(ClientSocket.recv(4096), ClientPrivateKey).decode('utf-8')
             TextLog.append(ServerOutput)
             with GlobalTerminal.location(0, GlobalTerminal.height - (len(TextLog) + 1)):
