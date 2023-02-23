@@ -365,7 +365,7 @@ def ConnectToServer(ip, port):
     
     UserID = int(rsa.decrypt(ClientSocket.recv(4096), ClientPrivateKey))
 
-    GlobalTerminal.clear()
+    print(GlobalTerminal.home + GlobalTerminal.clear, end="")
 
     print(f"Your username is: {ClientUser.username}")
     print(f"ID provided is: {UserID}")
