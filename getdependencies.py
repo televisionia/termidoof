@@ -10,7 +10,7 @@ except:
     
 os.system("")
 
-Dependencies = ["threading", "socket", "sys", "rsa", "inquirer"]
+Dependencies = ["threading", "socket", "sys", "rsa", "inquirer", "blessed"]
 
 Failed = 0
 Successful = 0
@@ -60,6 +60,3 @@ print(f"Dependencies Already Installed: \033[32m{AlreadyInstalled}\033[0m")
 print("")
 print("Press enter to exit.")
 input()
-    
-
-

@@ -4,11 +4,15 @@ import sys
 import rsa
 import inquirer
 from rsa import PublicKey as PublicKeyClass
+from blessed import Terminal
 
 GlobalUserList = []
 GlobalUserIDCount = 0
 GlobalCommandPrefix = ">> "
 GlobalPublicServerKey = ""
+GlobalTerminal = Terminal()
+GlobalLogLimit = 50
+GlobalClientTextLog = []
 
 # USER DETAILS
 
@@ -32,7 +36,7 @@ class User:
         
         
         
-# -- CLIENT <-> SERVER FUNCTIONS --
+# -- CLIENT TO SERVER FUNCTIONS --
 
 # - MESSAGE FLAGS -
 # CM = Client Message - For sending messages to other clients
@@ -40,7 +44,7 @@ class User:
 # UD = User Data - For sending the client's user data to the server
 # EK = Encryption Key - Requests for the server's public encryption key to be sent with a password
 
-def SendMessage(msg, userobject, userid):
+def SendMessageToServer(msg, userobject, userid):
     SendingMessage = f"CM {userid} {msg}"
     userobject.client.send(rsa.encrypt(SendingMessage.encode('utf-8'), GlobalPublicServerKey))
     
@@ -61,7 +65,11 @@ def RequestEncryptonKey(client, password):
         
     
     return RecievedKeyFromServer
-    
+
+# -- SERVER TO CLIENT FUNCTIONS --
+
+def SendMessageToUser(msg, userobject):
+    userobject.client.send(rsa.encrypt(f"{msg}".encode('utf-8'), userobject.publickey))
 
     
     
@@ -97,12 +105,13 @@ def GetUserFromID(ID):
 
 def StartClientShell(ClientUser, ClientUserID):
     while True:
-        ClientInput = input(f"{GlobalCommandPrefix}")
-        if len(ClientInput) > 40:
+        with GlobalTerminal.location(0, GlobalTerminal.height - 1):
+            ClientInput = input(f"{GlobalCommandPrefix}")
+        if len(ClientInput) > 80:
             print("\033[31m! error: input too large !\033[0m")                
         elif ClientInput != "":
             print('\033[1F\033[2K\r', end="")
-            SendMessage(ClientInput, ClientUser, ClientUserID)
+            SendMessageToServer(ClientInput, ClientUser, ClientUserID)
         else:
             print("\033[1F\r", end="")
 
@@ -111,6 +120,7 @@ def StartClientShell(ClientUser, ClientUserID):
 def ServerLoop(server, SocketConnection, Address, PasswordForEncryptionKey, PrivateKey):
     global GlobalUserList
     global GlobalUserIDCount
+    global GlobalClientTextLog
     GotEncryption = False
     ClientPublicKey = None
     
@@ -134,52 +144,58 @@ def ServerLoop(server, SocketConnection, Address, PasswordForEncryptionKey, Priv
                 
                 NewUserAddress = (SplitInput[3], int(SplitInput[4]))
                 
-                GlobalUserList.append([User(SplitInput[1], SplitInput[2], NewUserAddress, SocketConnection, ClientPublicKey), NewID])
+                NewUserClass = User(SplitInput[1], SplitInput[2], NewUserAddress, SocketConnection, ClientPublicKey)
+                GlobalUserList.append([NewUserClass, NewID])
                 
-                SocketConnection.send(rsa.encrypt(str(NewID).encode('utf-8'), ClientPublicKey))
+                SendMessageToUser(NewID, NewUserClass)
                 
                 for ConnectedClient in GlobalUserList:
-                    ConnectedClient[0].client.send(rsa.encrypt(f"{SplitInput[1]} has entered the server.".encode('utf-8'), ConnectedClient[0].publickey))
+                    SendMessageToUser(f"{SplitInput[1]} has entered the server.", ConnectedClient[0])
                     
             elif SplitInput[0] == "CM": #CLIENT MESSAGES OR COMMANDS
+                FoundUserID = int(SplitInput[1])
+                FoundUser = GetUserFromID(FoundUserID)
                 match SplitInput[2]:
                     case "msg":
-                        FoundUser = GetUserFromID(int(SplitInput[1]))
                         SplitInput.pop(0)
                         SplitInput.pop(0)
                         SplitInput.pop(0)
                         if FoundUser == None:
-                            SocketConnection.send(rsa.encrypt("\033[31m! error: invalid userID !\033[0m".encode('utf-8'), ClientPublicKey))
+                            SendMessageToUser("\033[31m! error: invalid userID !\033[0m", ConnectedClient[0])
                         else:
                             for ConnectedClient in GlobalUserList:
-                                ConnectedClient[0].client.send(rsa.encrypt(f"[{FoundUser.colorcode}{FoundUser.username}\033[0m]: {' '.join(SplitInput)}".encode('utf-8'), ConnectedClient[0].publickey))
+                                SendMessageToUser(f"{FoundUserID}-{FoundUser.colorcode}{FoundUser.username}\033[0m: {' '.join(SplitInput)}", ConnectedClient[0])
                     case "userlist":
                         for ConnectedClient in GlobalUserList:
-                            SocketConnection.send(rsa.encrypt(f"ID{ConnectedClient[1]}: {ConnectedClient[0].colorcode}{ConnectedClient[0].username}\033[0m\n".encode('utf-8'), ClientPublicKey))
+                            SendMessageToUser(f"ID{ConnectedClient[1]}: {ConnectedClient[0].colorcode}{ConnectedClient[0].username}\033[0m\n", FoundUser)
                     case "exit":
                         SocketConnection.close()
                     case "whisper":
                         try:
-                            FoundUser = GetUserFromID(int(SplitInput[1]))
                             SplitInput.pop(0)
                             SplitInput.pop(0)
                             SplitInput.pop(0)
                             Target = GetUserFromID(int(SplitInput[0]))
                             SplitInput.pop(0)
                             Target.whisper(FoundUser, ' '.join(SplitInput))
-                            SocketConnection.send(rsa.encrypt(f"\033[90mWhispered \"{' '.join(SplitInput)}\" to {Target.colorcode}{Target.username}\033[90m".encode('utf-8'), ClientPublicKey))
+                            SendMessageToUser(f"\033[90mWhispered \"{' '.join(SplitInput)}\" to {Target.colorcode}{Target.username}\033[90m", FoundUser)
                         except:
-                            SocketConnection.send(rsa.encrypt("\033[31m! error: whisper failed !\033[0m".encode('utf-8'), ClientPublicKey))
+                            SendMessageToUser("\033[31m! error: whisper failed !\033[0m", FoundUser)
                     case "kick":
                         try:
-                            if int(SplitInput[1]) == 0:
+                            if FoundUserID == 0:
                                 UserToKick = GetUserFromID(int(SplitInput[5]))
-                                UserToKick.client.send(rsa.encrypt("\033[31m! You were kicked from the server !\033[0m".encode('utf-8'), UserToKick.publickey))
+                                SendMessageToUser("\033[31m! You were kicked from the server !\033[0m", UserToKick)
                                 UserToKick.kick()
                             else:
-                                SocketConnection.send(rsa.encrypt("\033[31m! error: you are not a admin !\033[0m".encode('utf-8'), ClientPublicKey))                               
+                                SendMessageToUser("\033[31m! error: you are not a admin !\033[0m", FoundUser)                               
                         except:
-                            SocketConnection.send(rsa.encrypt("\033[31m! error: kick failed !\033[0m".encode('utf-8'), ClientPublicKey))
+                            SendMessageToUser("\033[31m! error: kick failed !\033[0m", FoundUser)
+                    case "clearlog":
+                        try:
+                            SendMessageToUser("CLEAR", FoundUser)
+                        except:
+                            SendMessageToUser("\033[31m! error: clear failed !\033[0m", FoundUser)
             elif SplitInput[0] == "EK": #ENCRYPTION KEY REQUEST HANDLER
                 if PasswordForEncryptionKey == "none":
                     SocketConnection.send(f"{GlobalPublicServerKey.n} {GlobalPublicServerKey.e}".encode('utf-8'))
@@ -202,7 +218,7 @@ def ServerLoop(server, SocketConnection, Address, PasswordForEncryptionKey, Priv
     except:
         GlobalUserList.remove([GetUserFromID(NewID), NewID])
         for ConnectedClient in GlobalUserList:
-            ConnectedClient[0].client.send(rsa.encrypt(f"{FoundUser.colorcode}{FoundUser.username}\033[0m has left the server.".encode('utf-8'), ConnectedClient.publickey))
+            SendMessageToUser(f"{FoundUser.colorcode}{FoundUser.username}\033[0m has left the server.", ConnectedClient[0])
         
         
         
@@ -249,7 +265,7 @@ def BeginServer(GivePrompt):
             return
 
     print(f"\r\033[90mGenerating encryption key...\033[0m")
-    GlobalPublicServerKey, PrivateKey = rsa.newkeys(512)
+    GlobalPublicServerKey, PrivateKey = rsa.newkeys(1024)
     DeletePreviousLine()
     print(f"\033[32mGenerated encryption key\033[0m")
     
@@ -263,6 +279,7 @@ def BeginServer(GivePrompt):
 def ConnectToServer(ip, port):
     global GlobalCommandPrefix
     global GlobalPublicServerKey
+    global GlobalTerminal
     
     ClientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     
@@ -313,7 +330,7 @@ def ConnectToServer(ip, port):
     
     
     print("\033[90mGenerating client encryption key...\033[0m")
-    ClientPublicKey, ClientPrivateKey = rsa.newkeys(512)
+    ClientPublicKey, ClientPrivateKey = rsa.newkeys(1024)
     DeletePreviousLine()
     print("\033[32mClient encryption key generated\033[0m")
     
@@ -347,18 +364,34 @@ def ConnectToServer(ip, port):
     SendUserData(ClientUser)
     
     UserID = int(rsa.decrypt(ClientSocket.recv(4096), ClientPrivateKey))
-    
-    print(f"Setup is {ClientUser.username} {ClientUser.address[0]}")
+
+    print(GlobalTerminal.home + GlobalTerminal.clear, end="")
+
+    print(f"Your username is: {ClientUser.username}")
     print(f"ID provided is: {UserID}")
     
+    GlobalClientTextLog = [f"Your username is: {ClientUser.username}", f"ID provided is: {UserID}"]
     
     ClientLoop = threading.Thread(target=StartClientShell, args=(ClientUser,UserID,))
     ClientLoop.start()
     try:
         while True:
+            if len(GlobalClientTextLog) > GlobalLogLimit:
+                GlobalClientTextLog.pop(0)
+            
             ServerOutput = rsa.decrypt(ClientSocket.recv(4096), ClientPrivateKey).decode('utf-8')
             
-            print(f"\033[2K\r{ServerOutput}")
+            if ServerOutput == "CLEAR":
+                GlobalClientTextLog = []
+                print(GlobalTerminal.home + GlobalTerminal.clear + GlobalTerminal.move_y(GlobalTerminal.height - 1) + ">> ", end="")
+            else:
+                
+                GlobalClientTextLog.append(ServerOutput)
+                
+                with GlobalTerminal.location(0, GlobalTerminal.height - (len(GlobalClientTextLog) + 1)):
+                    for LoggedMsg in GlobalClientTextLog:
+                        print(f"\033[2K\r{LoggedMsg}")
+                        
     except:
         print("\033[31m! Disconnected from server !\033[0m")
         ClientLoop.join()
