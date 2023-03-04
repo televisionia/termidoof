@@ -3,23 +3,50 @@ import socket
 import sys
 import rsa
 import inquirer
+import time
+from configparser import ConfigParser
 from rsa import PublicKey as PublicKeyClass
 from blessed import Terminal
 
 GlobalUserList = []
 GlobalUserIDCount = 0
-GlobalCommandPrefix = ">> "
+GlobalInputLine = ">> "
+GlobalCommandPrefix = "/"
 GlobalPublicServerKey = ""
 GlobalTerminal = Terminal()
 GlobalLogLimit = 50
 GlobalClientTextLog = []
+GlobalClientInfoLine = []
+GlobalAdminAssignments = [0]
+
+GlobalEmojicons = {"happy": "☺", "happydark": "☻", "note": "♪", "heart": "♥"}
+
+GlobalConfig = ConfigParser()
+GlobalConfig.read("config.ini")
+
+GlobalServerList = {}
+
+if "Saved_Connections" not in GlobalConfig.sections():
+    GlobalConfig.add_section("Saved_Connections")
+    GlobalConfig.set("Saved_Connections", "localhost", "127.0.0.1,5285")
+    with open("config.ini", 'w') as NewConfig:
+        GlobalConfig.write(NewConfig)
+
+def UpdateGlobalServerList():
+    global GlobalServerList
+    for name, data in GlobalConfig['Saved_Connections'].items():
+        GlobalServerList[name] = data.split(',')
+
+UpdateGlobalServerList()
+print(GlobalServerList)
+    
 
 # USER DETAILS
 
 class User:
     
     def whisper(self, fromwho, message):
-        self.client.send(rsa.encrypt(f"\033[90m~{fromwho.colorcode}{fromwho.username}\033[90m~ {message}\033[0m".encode('utf-8'), self.publickey))
+        self.client.send(rsa.encrypt(f"\033[90m{fromwho[1]}~{fromwho[0].colorcode}{fromwho[0].username}\033[90m~ {message}\033[0m".encode('utf-8'), self.publickey))
     
     def kick(self):
         self.client.close()
@@ -106,8 +133,8 @@ def GetUserFromID(ID):
 def StartClientShell(ClientUser, ClientUserID):
     while True:
         with GlobalTerminal.location(0, GlobalTerminal.height - 1):
-            ClientInput = input(f"{GlobalCommandPrefix}")
-        if len(ClientInput) > 80:
+            ClientInput = input(f"{GlobalInputLine}")
+        if len(ClientInput) > 200:
             print("\033[31m! error: input too large !\033[0m")                
         elif ClientInput != "":
             print('\033[1F\033[2K\r', end="")
@@ -120,54 +147,69 @@ def StartClientShell(ClientUser, ClientUserID):
 def ServerLoop(server, SocketConnection, Address, PasswordForEncryptionKey, PrivateKey):
     global GlobalUserList
     global GlobalUserIDCount
-    global GlobalClientTextLog
+    global GlobalEmojicons
+    global GlobalAdminAssignments
     GotEncryption = False
     ClientPublicKey = None
     
     print(f"\033[93m{Address[0]}\033[33m has connected.\033[0m")
     
-    try:
-        while True:
-            if GotEncryption:
-                UserInput = rsa.decrypt(SocketConnection.recv(4096), PrivateKey).decode('utf-8')
-            else:
-                UserInput = SocketConnection.recv(4096).decode('utf-8')
-            SplitInput = UserInput.split()
+    #try:
+    while True:
+        if GotEncryption:
+            UserInput = rsa.decrypt(SocketConnection.recv(4096), PrivateKey).decode('utf-8')
+        else:
+            UserInput = SocketConnection.recv(4096).decode('utf-8')
+        SplitInput = UserInput.split()
+        
+        # - - - - - - - - -
+        #This is where commands that go to the server are handled
+        
+        if SplitInput[0] == "UD": #USERDATA TRANSFER
             
-            # - - - - - - - - -
-            #This is where commands that go to the server are handled
+            NewID = GlobalUserIDCount
+            GlobalUserIDCount += 1
             
-            if SplitInput[0] == "UD": #USERDATA TRANSFER
+            NewUserAddress = (SplitInput[3], int(SplitInput[4]))
+            
+            NewUserClass = User(SplitInput[1], SplitInput[2], NewUserAddress, SocketConnection, ClientPublicKey)
+            GlobalUserList.append([NewUserClass, NewID])
+            
+            SendMessageToUser(NewID, NewUserClass)
+            
+            for ConnectedClient in GlobalUserList:
+                SendMessageToUser(f"{SplitInput[1]} has entered the server.", ConnectedClient[0])
                 
-                NewID = GlobalUserIDCount
-                GlobalUserIDCount += 1
-                
-                NewUserAddress = (SplitInput[3], int(SplitInput[4]))
-                
-                NewUserClass = User(SplitInput[1], SplitInput[2], NewUserAddress, SocketConnection, ClientPublicKey)
-                GlobalUserList.append([NewUserClass, NewID])
-                
-                SendMessageToUser(NewID, NewUserClass)
-                
-                for ConnectedClient in GlobalUserList:
-                    SendMessageToUser(f"{SplitInput[1]} has entered the server.", ConnectedClient[0])
-                    
-            elif SplitInput[0] == "CM": #CLIENT MESSAGES OR COMMANDS
-                FoundUserID = int(SplitInput[1])
-                FoundUser = GetUserFromID(FoundUserID)
+        elif SplitInput[0] == "CM": #CLIENT MESSAGES OR COMMANDS
+            FoundUserID = int(SplitInput[1])
+            FoundUser = GetUserFromID(FoundUserID)
+            if SplitInput[2][0] == GlobalCommandPrefix:
+                SplitInput[2] = SplitInput[2].replace(GlobalCommandPrefix, "")
                 match SplitInput[2]:
                     case "msg":
+
                         SplitInput.pop(0)
                         SplitInput.pop(0)
                         SplitInput.pop(0)
-                        if FoundUser == None:
-                            SendMessageToUser("\033[31m! error: invalid userID !\033[0m", ConnectedClient[0])
-                        else:
-                            for ConnectedClient in GlobalUserList:
-                                SendMessageToUser(f"{FoundUserID}-{FoundUser.colorcode}{FoundUser.username}\033[0m: {' '.join(SplitInput)}", ConnectedClient[0])
-                    case "userlist":
+
+                        MessageToSend = f"{FoundUserID}-{FoundUser.colorcode}{FoundUser.username}\033[0m: {' '.join(SplitInput)}"
+                        for name, emoji in GlobalEmojicons.items():
+                            MessageToSend = MessageToSend.replace(f":{name}:", emoji) 
+
                         for ConnectedClient in GlobalUserList:
-                            SendMessageToUser(f"ID{ConnectedClient[1]}: {ConnectedClient[0].colorcode}{ConnectedClient[0].username}\033[0m\n", FoundUser)
+                            SendMessageToUser(MessageToSend, ConnectedClient[0])
+
+                    case "userlist":
+                        SendMessageToUser(f"\033[36m┏━\033[0m {len(GlobalUserList)} connected", FoundUser)
+
+                        for ConnectedClient in GlobalUserList:
+                            if ConnectedClient[1] in GlobalAdminAssignments:
+                                SendMessageToUser(f"\033[36m┃\033[0mID{ConnectedClient[1]}: {ConnectedClient[0].colorcode}{ConnectedClient[0].username}\033[0m (Admin)", FoundUser)
+                            else:
+                                SendMessageToUser(f"\033[36m┃\033[0mID{ConnectedClient[1]}: {ConnectedClient[0].colorcode}{ConnectedClient[0].username}\033[0m", FoundUser)
+                        
+                        SendMessageToUser(f"\033[36m┗━\033[0m", FoundUser)
+
                     case "exit":
                         SocketConnection.close()
                     case "whisper":
@@ -177,48 +219,118 @@ def ServerLoop(server, SocketConnection, Address, PasswordForEncryptionKey, Priv
                             SplitInput.pop(0)
                             Target = GetUserFromID(int(SplitInput[0]))
                             SplitInput.pop(0)
-                            Target.whisper(FoundUser, ' '.join(SplitInput))
+                            Target.whisper([FoundUser, FoundUserID], ' '.join(SplitInput))
                             SendMessageToUser(f"\033[90mWhispered \"{' '.join(SplitInput)}\" to {Target.colorcode}{Target.username}\033[90m", FoundUser)
                         except:
                             SendMessageToUser("\033[31m! error: whisper failed !\033[0m", FoundUser)
                     case "kick":
                         try:
-                            if FoundUserID == 0:
-                                UserToKick = GetUserFromID(int(SplitInput[5]))
+                            if FoundUserID in GlobalAdminAssignments:
+                                UserToKick = GetUserFromID(int(SplitInput[3]))
+                                if UserToKick in GlobalAdminAssignments:
+                                    SendMessageToUser(f"\033[31m! {UserToKick.colorcode}{UserToKick.username}\033[0m is an admin !\033[0m", FoundUser)
                                 SendMessageToUser("\033[31m! You were kicked from the server !\033[0m", UserToKick)
                                 UserToKick.kick()
                             else:
-                                SendMessageToUser("\033[31m! error: you are not a admin !\033[0m", FoundUser)                               
+                                SendMessageToUser("\033[31m! error: admin is required !\033[0m", FoundUser)                               
                         except:
                             SendMessageToUser("\033[31m! error: kick failed !\033[0m", FoundUser)
+                    case "admin":
+
+                        #This is a annoyingly long piece of code for a single command... Spare me for this one (doesn't mean it cant be cleaned up a bit though)
+                        # / /
+
+                        try:
+                            if FoundUserID in GlobalAdminAssignments:
+                                try:
+                                    IDToGiveAdmin = int(SplitInput[4])
+                                    UserToGiveAdmin = GetUserFromID(IDToGiveAdmin)
+                                    if SplitInput[3] == "a" or SplitInput[3] == "add":
+                                        if IDToGiveAdmin not in GlobalAdminAssignments:
+                                            GlobalAdminAssignments.append(IDToGiveAdmin)
+                                            if UserToGiveAdmin != None:
+                                                SendMessageToUser(f"\033[32m{FoundUser.colorcode}{FoundUser.username}\033[32m promoted you to admin\033[0m", UserToGiveAdmin)
+                                                SendMessageToUser(f"\033[32myou promoted {UserToGiveAdmin.colorcode}{UserToGiveAdmin.username}\033[32m to admin\033[0m", FoundUser)
+                                            else:
+                                                SendMessageToUser(f"\033[33m! warning: User is nonexistent !\033[0m\n\033[33mUser who joins as ID \033[0m{IDToGiveAdmin}\033[33m will get admin automatically\033[0m", FoundUser)
+                                        else:
+                                            if UserToGiveAdmin != None:
+                                                SendMessageToUser(f"\033[31m! error: {UserToGiveAdmin.colorcode}{UserToGiveAdmin.username}\033[31m is already an admin !\033[0m", FoundUser)
+                                            else:
+                                                SendMessageToUser(f"\033[31m! error: ID {IDToGiveAdmin} is already an admin !\033[0m", FoundUser)
+                                    elif SplitInput[3] == "r" or SplitInput[3] == "remove":
+                                        if IDToGiveAdmin in GlobalAdminAssignments:
+                                            GlobalAdminAssignments.remove(IDToGiveAdmin)
+                                            if UserToGiveAdmin != None:
+                                                SendMessageToUser(f"\033[31m{FoundUser.colorcode}{FoundUser.username}\033[31m revoked your admin\033[0m", UserToGiveAdmin)
+                                                SendMessageToUser(f"\033[32myou revoked {UserToGiveAdmin.colorcode}{UserToGiveAdmin.username}\033[32m of their admin\033[0m", FoundUser)
+                                            else:
+                                                SendMessageToUser(f"\033[32m{IDToGiveAdmin} is no longer an admin ID\033[0m", FoundUser)
+                                        else:
+                                            if UserToGiveAdmin != None:
+                                                SendMessageToUser(f"\033[31m! error: {UserToGiveAdmin.colorcode}{UserToGiveAdmin.username}\033[31m is not an admin !\033[0m", FoundUser)
+                                            else:
+                                                SendMessageToUser(f"\033[31m! error: ID {IDToGiveAdmin} is not an admin !\033[0m", FoundUser)
+                                    else:
+                                        SendMessageToUser("\033[31m! error: command failed !\033[0m\nUse '/admin add (id)' or '/admin remove (id)'", FoundUser)
+                                except:
+                                    SendMessageToUser("\033[31m! error: command failed !\033[0m\nUse '/admin add (id)' or '/admin remove (id)'", FoundUser)
+                            else:
+                                SendMessageToUser("\033[31m! error: admin is required !\033[0m", FoundUser)                               
+                        except:
+                            SendMessageToUser("\033[31m! error: command failed !\033[0m", FoundUser)
+                            SendMessageToUser("\033[31m! error: command failed !\033[0m\nUse '/admin add (id)' or '/admin remove (id)'", FoundUser)
+
+                            # / /
+
                     case "clearlog":
                         try:
                             SendMessageToUser("CLEAR", FoundUser)
+                            SendMessageToUser("Chat log has been cleared", FoundUser)
                         except:
                             SendMessageToUser("\033[31m! error: clear failed !\033[0m", FoundUser)
-            elif SplitInput[0] == "EK": #ENCRYPTION KEY REQUEST HANDLER
-                if PasswordForEncryptionKey == "none":
-                    SocketConnection.send(f"{GlobalPublicServerKey.n} {GlobalPublicServerKey.e}".encode('utf-8'))
-                elif SplitInput[1] == PasswordForEncryptionKey:              
-                    print("")
-                    match MenuSelection(["Accept", "Deny"],f"\033[93m{Address[0]}\033[33m requests public encryption key\033[0m"):
-                        case "Accept":
-                            SocketConnection.send(f"{GlobalPublicServerKey.n} {GlobalPublicServerKey.e}".encode('utf-8'))
-                        case "Deny":
-                            SocketConnection.send("denied".encode('utf-8'))
-                else:
-                    SocketConnection.send("denied".encode('utf-8'))
-            
-            elif SplitInput[0] == "GK": #CLIENT PUBLIC ENCRYPTION KEY RECIEVER  
-                GotEncryption = True
-                ClientPublicKey = PublicKeyClass(int(SplitInput[1]), int(SplitInput[2]))
+                    case "help":
+                        SendMessageToUser("List of default commands:\nmsg, userlist, exit, whisper, clearlog, help", FoundUser)
+                        SendMessageToUser("Admin only commands:\nkick, admin", FoundUser)
+                    case _:
+                        SendMessageToUser("\033[31m! error: command unknown !\033[0m", FoundUser)
+            else:
+                SplitInput.pop(0)
+                SplitInput.pop(0)
+
+                MessageToSend = f"{FoundUserID}-{FoundUser.colorcode}{FoundUser.username}\033[0m: {' '.join(SplitInput)}"
+                for name, emoji in GlobalEmojicons.items():
+                    MessageToSend = MessageToSend.replace(f":{name}:", emoji) 
+
+                for ConnectedClient in GlobalUserList:
+                    SendMessageToUser(MessageToSend, ConnectedClient[0])
+
+
+
+        elif SplitInput[0] == "EK": #ENCRYPTION KEY REQUEST HANDLER
+            if PasswordForEncryptionKey == "none":
+                SocketConnection.send(f"{GlobalPublicServerKey.n} {GlobalPublicServerKey.e}".encode('utf-8'))
+            elif SplitInput[1] == PasswordForEncryptionKey:              
+                print("")
+                match MenuSelection(["Accept", "Deny"],f"\033[93m{Address[0]}\033[33m requests public encryption key\033[0m"):
+                    case "Accept":
+                        SocketConnection.send(f"{GlobalPublicServerKey.n} {GlobalPublicServerKey.e}".encode('utf-8'))
+                    case "Deny":
+                        SocketConnection.send("denied".encode('utf-8'))
+            else:
+                SocketConnection.send("denied".encode('utf-8'))
+        
+        elif SplitInput[0] == "GK": #CLIENT PUBLIC ENCRYPTION KEY RECIEVER  
+            GotEncryption = True
+            ClientPublicKey = PublicKeyClass(int(SplitInput[1]), int(SplitInput[2]))
                             
             # - - - - - - - - -
             
-    except:
-        GlobalUserList.remove([GetUserFromID(NewID), NewID])
-        for ConnectedClient in GlobalUserList:
-            SendMessageToUser(f"{FoundUser.colorcode}{FoundUser.username}\033[0m has left the server.", ConnectedClient[0])
+    #except:
+     #   
+      #  GlobalUserList.remove([GetUserFromID(NewID), NewID])
+       # for ConnectedClient in GlobalUserList:
+        #    SendMessageToUser(f"{FoundUser.colorcode}{FoundUser.username}\033[0m has left the server.", ConnectedClient[0])
         
         
         
@@ -265,7 +377,7 @@ def BeginServer(GivePrompt):
             return
 
     print(f"\r\033[90mGenerating encryption key...\033[0m")
-    GlobalPublicServerKey, PrivateKey = rsa.newkeys(1024)
+    GlobalPublicServerKey, PrivateKey = rsa.newkeys(2048)
     DeletePreviousLine()
     print(f"\033[32mGenerated encryption key\033[0m")
     
@@ -277,9 +389,11 @@ def BeginServer(GivePrompt):
         serverloop.start()
 
 def ConnectToServer(ip, port):
-    global GlobalCommandPrefix
+    global GlobalInputLine
     global GlobalPublicServerKey
     global GlobalTerminal
+    global GlobalClientTextLog
+    global GlobalClientInfoLine
     
     ClientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     
@@ -330,7 +444,7 @@ def ConnectToServer(ip, port):
     
     
     print("\033[90mGenerating client encryption key...\033[0m")
-    ClientPublicKey, ClientPrivateKey = rsa.newkeys(1024)
+    ClientPublicKey, ClientPrivateKey = rsa.newkeys(2048)
     DeletePreviousLine()
     print("\033[32mClient encryption key generated\033[0m")
     
@@ -340,7 +454,7 @@ def ConnectToServer(ip, port):
     print("\033[33m- User Setup -\033[0m")
     print("")
     
-    ClientUser = User(input("\033[33mUsername:\033[0m ").replace(" ", "_"), MenuSelection(["Red", "Blue", "Yellow", "Green"], "\033[33mUsername Colour\033[0m"), ClientSocket.getsockname(), ClientSocket, ClientPublicKey)
+    ClientUser = User(input("\033[33mUsername:\033[0m ").replace(" ", "_"), MenuSelection(["Red", "Blue", "Yellow", "Green"], "\033[33mUsername Color\033[0m"), ClientSocket.getsockname(), ClientSocket, ClientPublicKey)
     if ClientUser.username == "" or len(ClientUser.username) > 12:
         print("\033[31m! error: invalid username !\033[0m")
         print("Usernames cannot be blank or more than 12 characters")
@@ -355,7 +469,7 @@ def ConnectToServer(ip, port):
         case "Blue":
             ClientUser.colorcode = "\033[34m"
         case "Yellow":
-            ClientUser.colorcode = "\033[93m"
+            ClientUser.colorcode = "\033[33m"
         case "Green":
             ClientUser.colorcode = "\033[32m"
             
@@ -370,31 +484,49 @@ def ConnectToServer(ip, port):
     print(f"Your username is: {ClientUser.username}")
     print(f"ID provided is: {UserID}")
     
-    GlobalClientTextLog = [f"Your username is: {ClientUser.username}", f"ID provided is: {UserID}"]
+    GlobalClientTextLog = []
+    GlobalClientInfoLine = [f"\033[47;30mid: {UserID} ┃ name: {ClientUser.colorcode}{ClientUser.username}\033[47;30m ┃ {ip}:{port}\033[0m"]
+    
     
     ClientLoop = threading.Thread(target=StartClientShell, args=(ClientUser,UserID,))
     ClientLoop.start()
-    try:
-        while True:
-            if len(GlobalClientTextLog) > GlobalLogLimit:
+    #try:
+    while True:
+        
+        PureServerOutput = ClientSocket.recv(4096)
+        ServerOutput = rsa.decrypt(PureServerOutput, ClientPrivateKey).decode('utf-8')
+        
+        if ServerOutput == "CLEAR":
+            GlobalClientTextLog = []
+            print(GlobalTerminal.home + GlobalTerminal.clear + GlobalTerminal.move_y(GlobalTerminal.height - 1) + ">> ", end="")
+        else:
+            if ServerOutput[0].isdigit():
+                if len(ServerOutput) > 50:
+                    ServerOutput = ServerOutput[0:51] + "\n" + ServerOutput[51:len(ServerOutput)]
+                    if len(ServerOutput) > 100:
+                        ServerOutput = ServerOutput[0:101] + "\n" + ServerOutput[101:len(ServerOutput)]
+                        if len(ServerOutput) > 150:
+                            ServerOutput = ServerOutput[0:151] + "\n" + ServerOutput[151:len(ServerOutput)]
+                            if len(ServerOutput) > 200:
+                                ServerOutput = ServerOutput[0:201] + "\n" + ServerOutput[201:len(ServerOutput)]
+
+            SplitOutput = ServerOutput.split('\n')
+            
+            for line in SplitOutput:
+                GlobalClientTextLog.append(line)
+
+            while len(GlobalClientTextLog) > GlobalLogLimit:
                 GlobalClientTextLog.pop(0)
             
-            ServerOutput = rsa.decrypt(ClientSocket.recv(4096), ClientPrivateKey).decode('utf-8')
-            
-            if ServerOutput == "CLEAR":
-                GlobalClientTextLog = []
-                print(GlobalTerminal.home + GlobalTerminal.clear + GlobalTerminal.move_y(GlobalTerminal.height - 1) + ">> ", end="")
-            else:
-                
-                GlobalClientTextLog.append(ServerOutput)
-                
-                with GlobalTerminal.location(0, GlobalTerminal.height - (len(GlobalClientTextLog) + 1)):
-                    for LoggedMsg in GlobalClientTextLog:
-                        print(f"\033[2K\r{LoggedMsg}")
+            with GlobalTerminal.location(0, GlobalTerminal.height - (len(GlobalClientTextLog) + len(GlobalClientInfoLine) + 1)):
+                for line in GlobalClientTextLog:
+                    print(f"\033[2K\r{line}")
+                for line in GlobalClientInfoLine:
+                    print(f"\033[2K\r{line}")
                         
-    except:
-        print("\033[31m! Disconnected from server !\033[0m")
-        ClientLoop.join()
+    #except:
+    #    print("\033[31m! Disconnected from server !\033[0m")
+    #    ClientLoop.join()
 
         
 
@@ -403,15 +535,53 @@ def ConnectToServer(ip, port):
 
 # -- MISC FUNCTIONS --
 
+def GenerateServerList():
+    ServerList = []
+    for name, data in GlobalServerList.items():
+        ServerList.append(f"{name} - {data[0]}:{data[1]}")
+    
+    ServerList.append("Add")
+    ServerList.append("Remove")
+    ServerList.append("Cancel")
+    
+    Selection = MenuSelection(ServerList,"\033[33mSelect a Server\033[0m")
+    match Selection:
+        case "Add":
+            NewServerNickname = input("\033[33mNickname for server:\033[0m ")
+            NewServerIP = input('\033[33mIP Address for server:\033[0m ')
+            NewServerPort = input('\033[33mPort for server:\033[0m ')
+            GlobalConfig.set('Saved_Connections', NewServerNickname, f"{NewServerIP},{NewServerPort}")
+            with open("config.ini", 'w') as NewConfig:
+                GlobalConfig.write(NewConfig)
+            UpdateGlobalServerList()
+            GenerateServerList()
+        case "Remove":
+            try:
+                OptionToRemove = input("\033[33mNickname of server to remove:\033[0m ")
+                GlobalConfig.remove_option('Saved_Connections', OptionToRemove)
+                with open("config.ini", 'w') as NewConfig:
+                    GlobalConfig.write(NewConfig)
+            except:
+                print("\033[31m! error: removal failed !\033[0m")
+            UpdateGlobalServerList()
+            GenerateServerList()
+        case "Cancel":
+            return
+        case _:
+            ServerToConnect = GlobalServerList[Selection.split()[0]]
+            ConnectToServer(ServerToConnect[0], int(ServerToConnect[1]))
+
 def PromptForServer():
+    global GlobalServerList
+
     print("\033[33m- Welcome to Termidoof! -")
     print("")
 
     match MenuSelection(["Client", "Server"],"\033[33mSelect an option\033[0m"):
         case "Client":
-            match MenuSelection(["Scan", "Manual", "Cancel"],"\033[33mGet Server\033[0m"):
-                case "Scan":
-                    print("\033[31m! SCANNING FOR SERVERS HAS NOT BEEN ADDED YET !\033[0m")
+            match MenuSelection(["Server List", "Manual", "Cancel"],"\033[33mGet Server\033[0m"):
+                case "Server List":
+                    GenerateServerList()
                 case "Manual":
                     ConnectToServer(input("\033[33mIP Address of server:\033[0m "), input("\033[33mPort:\033[0m "))
         case "Server":

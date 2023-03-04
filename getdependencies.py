@@ -10,7 +10,7 @@ except:
     
 os.system("")
 
-Dependencies = ["threading", "socket", "sys", "rsa", "inquirer", "blessed"]
+Dependencies = ["threading", "socket", "time", "configparser", "sys", "rsa", "inquirer", "blessed"]
 
 Failed = 0
 Successful = 0

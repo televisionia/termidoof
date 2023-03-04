@@ -3,6 +3,15 @@ os.system("")
 
 ReleaseVersion = "v0.1.0-alpha1"
 RepositoryLink = "https://github.com/televisionia/termidoof"
+CurrentDirectory = os.path.dirname(os.path.realpath(__file__))
+ConfigPath = CurrentDirectory + "/config.ini"
+if not os.path.exists(ConfigPath):
+    print("\033[31m!!! Cannot find config.ini !!!\033[0m")
+    print("\033[31m!!! Please place the config file in the same directory as the termidoof executable !!!\033[0m")
+    print("\033[31mPress enter to close.\033[0m")
+    input()
+    exit()
+
 
 print("\033[35m/--------------------------------------------------\\")
 print("|                                                  |")
@@ -26,6 +35,8 @@ try:
     import rsa
     import inquirer
     import blessed
+    import time
+    import configparser
 except:
     print("\033[31m!!! Uh oh! It seems like some dependencies are not installed... !!!\033[0m")
     print("\033[31mIf this is a build and it is not being run from source, its probably broken.\033[0m")
