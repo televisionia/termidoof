@@ -255,7 +255,7 @@ def BeginServer(GivePrompt):
         server.bind((socket.gethostbyname(socket.gethostname()), 9090))
 
     PasswordForEncryptionKey = ""
-    match MenuSelection(["Create", "Set as none", "Cancel"], "\033[33mPublic Encryption Password:\033[0m"):
+    match MenuSelection(["Create", "Set as none", "Cancel"], "\033[33mPublic Encryption Password\033[0m"):
         case "Create":
             while PasswordForEncryptionKey == "":
                 PasswordForEncryptionKey = input("\033[33mEncryption Password:\033[0m ")
