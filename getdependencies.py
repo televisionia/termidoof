@@ -16,7 +16,7 @@ Failed = 0
 Successful = 0
 AlreadyInstalled = 0
 try:
-    os.system("pip -V")
+    os.system("pip3 -V")
 except:
     print(f"\033[31mPip cannot be found! Either your system is broken, your Python install isn't in PATH, or Pip is not installed\033[0m")
     print("Press enter to exit.")
