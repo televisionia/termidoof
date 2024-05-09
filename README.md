@@ -1,4 +1,9 @@
 # termidoof
+```
+NOTE AS OF THE 9TH OF MAY 2024: THIS PROJECT IS CURRENTLY, MOSTLY, DISCONTINUED FOR NOW.
+I will probably still review any pull requests though, but this project was just for fun.
+```
+
 A quirky lan-server based multiuser CLI interface with benefits, best in school or the workplace.
 Should work on most systems, including Windows, Linux and MacOS.
 
